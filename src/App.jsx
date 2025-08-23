@@ -855,6 +855,28 @@ const AdminPanel = ({ userData }) => {
         await setDoc(doc(db, "config", "payment"), paymentInfo);
         alert("Payment info updated!");
     };
+    const handleCancelOrder = async (orderToCancel) => {
+    try {
+        await runTransaction(db, async (transaction) => {
+            // 1. Add stock back to menu items
+            for (const item of orderToCancel.items) {
+                const menuItemRef = doc(db, "menu", item.id);
+                const menuItemDoc = await transaction.get(menuItemRef);
+                if (menuItemDoc.exists()) {
+                    const newQuantity = menuItemDoc.data().quantity + item.quantity;
+                    transaction.update(menuItemRef, { quantity: newQuantity });
+                }
+            }
+            // 2. Update the order status to 'cancelled'
+            const orderRef = doc(db, "orders", orderToCancel.id);
+            transaction.update(orderRef, { status: 'cancelled' });
+        });
+    } catch (error) {
+        console.error("Error cancelling order: ", error);
+        // You can replace this with your themed modal if you prefer
+        alert("Failed to cancel order. Please try again.");
+    }
+};
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         await updateDoc(doc(db, "orders", orderId), { status: newStatus });
@@ -866,16 +888,18 @@ const AdminPanel = ({ userData }) => {
     };
 
     const confirmAction = async () => {
-        if (actionToConfirm) {
-            if (actionToConfirm.type === 'clearOrder') {
-                await deleteDoc(doc(db, "orders", actionToConfirm.id));
-            } else if (actionToConfirm.type === 'clearCart') {
-                await deleteDoc(doc(db, "carts", actionToConfirm.id));
-            }
-            setActionToConfirm(null);
-            setShowConfirmModal(false);
+    if (actionToConfirm) {
+        if (actionToConfirm.type === 'clearOrder') {
+            await deleteDoc(doc(db, "orders", actionToConfirm.id));
+        } else if (actionToConfirm.type === 'clearCart') {
+            await deleteDoc(doc(db, "carts", actionToConfirm.id));
+        } else if (actionToConfirm.type === 'cancelOrder') {
+            await handleCancelOrder(actionToConfirm.order);
         }
-    };
+        setActionToConfirm(null);
+        setShowConfirmModal(false);
+    }
+};
     
     const startEditing = (item) => {
         setEditingItem(item);
@@ -952,32 +976,44 @@ const AdminPanel = ({ userData }) => {
                                     ))}
                                 </div>
                                 <div className="mt-4 flex flex-wrap gap-3">
-                                    {order.status === 'payment_pending' && (
-                                        <button onClick={() => handleUpdateOrderStatus(order.id, 'preparing')} className="bg-green-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-green-600">
-                                            Verify Payment
-                                        </button>
-                                    )}
-                                    {order.status === 'preparing' && order.orderType === 'delivery' && (
-                                        <button onClick={() => handleUpdateOrderStatus(order.id, 'out_for_delivery')} className="bg-blue-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-blue-600">
-                                            Out for Delivery
-                                        </button>
-                                    )}
-                                    {order.status === 'preparing' && order.orderType === 'takeaway' && (
-                                        <button onClick={() => handleUpdateOrderStatus(order.id, 'ready_for_pickup')} className="bg-blue-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-blue-600">
-                                            Ready for Pickup
-                                        </button>
-                                    )}
-                                    {(order.status === 'out_for_delivery' || order.status === 'ready_for_pickup') && (
-                                        <button onClick={() => handleUpdateOrderStatus(order.id, 'delivered')} className="bg-purple-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-purple-600">
-                                            Mark as Delivered
-                                        </button>
-                                    )}
-                                    {(order.status === 'delivered' || order.status === 'cancelled') && (
-                                        <button onClick={() => handleClearAction({type: 'clearOrder', id: order.id})} className="bg-gray-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-gray-600">
-                                            Clear
-                                        </button>
-                                    )}
-                                </div>
+    {order.status === 'payment_pending' && (
+        <>
+            <button onClick={() => handleUpdateOrderStatus(order.id, 'preparing')} className="bg-green-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-green-600">
+                Verify Payment
+            </button>
+            <button onClick={() => handleClearAction({type: 'cancelOrder', order: order})} className="bg-red-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-red-600">
+                Cancel
+            </button>
+        </>
+    )}
+    {order.status === 'preparing' && (
+        <>
+            {order.orderType === 'delivery' && (
+                <button onClick={() => handleUpdateOrderStatus(order.id, 'out_for_delivery')} className="bg-blue-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-blue-600">
+                    Out for Delivery
+                </button>
+            )}
+            {order.orderType === 'takeaway' && (
+                <button onClick={() => handleUpdateOrderStatus(order.id, 'ready_for_pickup')} className="bg-blue-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-blue-600">
+                    Ready for Pickup
+                </button>
+            )}
+            <button onClick={() => handleClearAction({type: 'cancelOrder', order: order})} className="bg-red-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-red-600">
+                Cancel
+            </button>
+        </>
+    )}
+    {(order.status === 'out_for_delivery' || order.status === 'ready_for_pickup') && (
+        <button onClick={() => handleUpdateOrderStatus(order.id, 'delivered')} className="bg-purple-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-purple-600">
+            Mark as Delivered
+        </button>
+    )}
+    {(order.status === 'delivered' || order.status === 'cancelled') && (
+        <button onClick={() => handleClearAction({type: 'clearOrder', id: order.id})} className="bg-gray-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-gray-600">
+            Clear
+        </button>
+    )}
+</div>
                             </div>
                         )) : <p className="text-gray-400">No orders yet.</p>}
                     </div>
