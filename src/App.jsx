@@ -843,6 +843,399 @@ const UserApp = ({ userData, setUserData }) => {
     const menuItemsRefs = Object.values(cart).map(item => doc(db, "menu", item.id));
     const menuItemDocs = await Promise.all(menuItemsRefs.map(ref => transaction.get(ref)));
 
+    // Phase 2: Now, perf        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"></path>
+        <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"></path>
+        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"></path>
+        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.012 35.836 44 30.138 44 24c0-1.341-.138-2.65-.389-3.917z"></path>
+    </svg>
+);
+const CartIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+);
+const OrdersIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+);
+
+
+// --- COMPONENTS (LoadingScreen, AuthComponent are the same) ---
+const LoadingScreen = () => {
+    return (
+        <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-50 text-white">
+            <div className="relative">
+                <div className="w-24 h-24 border-4 border-dashed rounded-full animate-spin border-yellow-400"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-4xl">🍔</span>
+                </div>
+            </div>
+            <p className="mt-4 text-lg font-semibold tracking-wider animate-pulse">Warming up the kitchen...</p>
+        </div>
+    );
+};
+const AuthComponent = ({ setUserData }) => {
+    const [isLogin, setIsLogin] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [showWhatsappPrompt, setShowWhatsappPrompt] = useState(false);
+    const [googleUser, setGoogleUser] = useState(null);
+
+    const handleGoogleLogin = async () => {
+        setIsLoading(true);
+        setError('');
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (!userDoc.exists() || !userDoc.data().whatsapp) {
+                setGoogleUser(user);
+                setShowWhatsappPrompt(true);
+            } else {
+                setUserData({ ...user, ...userDoc.data() });
+            }
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleWhatsappSubmit = async (e) => {
+        e.preventDefault();
+        if (!/^\d{10,15}$/.test(whatsapp)) {
+            setError("Please enter a valid WhatsApp number.");
+            return;
+        }
+        setIsLoading(true);
+        setError('');
+        try {
+            const userToUpdate = googleUser || auth.currentUser;
+            if (userToUpdate) {
+                await setDoc(doc(db, "users", userToUpdate.uid), {
+                    email: userToUpdate.email,
+                    displayName: userToUpdate.displayName,
+                    whatsapp: whatsapp,
+                    isAdmin: false,
+                }, { merge: true });
+                const userDoc = await getDoc(doc(db, "users", userToUpdate.uid));
+                setUserData({ ...userToUpdate, ...userDoc.data() });
+            }
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setIsLoading(false);
+            setShowWhatsappPrompt(false);
+        }
+    };
+
+    const handleEmailAuth = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
+
+        if (!isLogin) { // Signup
+            if (password !== confirmPassword) {
+                setError("Passwords do not match.");
+                setIsLoading(false);
+                return;
+            }
+            if (!/^\d{10,15}$/.test(whatsapp)) {
+                setError("Please enter a valid WhatsApp number.");
+                setIsLoading(false);
+                return;
+            }
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, "users", user.uid), {
+                    email: user.email,
+                    whatsapp: whatsapp,
+                    isAdmin: false,
+                });
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                setUserData({ ...user, ...userDoc.data() });
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    setError('Email Already Exists');
+                } else {
+                    setError(error.message);
+                }
+            }
+        } else { // Login
+            try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists()) {
+        setUserData({ ...user, ...userDoc.data() });
+    } else {
+        await signOut(auth);
+        setError("User data not found. Please sign up.");
+    }
+} catch (error) {
+    // Handle Firebase auth errors with friendly messages
+    switch (error.code) {
+        case "auth/wrong-password":
+            setError("Invalid password. Please try again.");
+            break;
+        case "auth/user-not-found":
+            setError("User does not exist. Please sign up.");
+            break;
+        case "auth/invalid-email":
+            setError("Invalid email format.");
+            break;
+        case "auth/user-disabled":
+            setError("This account has been disabled. Contact support.");
+            break;
+        case "auth/too-many-requests":
+            setError("Too many failed attempts. Please wait and try again later.");
+            break;
+        case "auth/network-request-failed":
+            setError("Network error. Please check your internet connection.");
+            break;
+        case "auth/invalid-credential":
+            setError("Invalid login credentials. Please try again.");
+            break;
+        default:
+            setError("Something went wrong. Please try again.");
+            console.error("Login error:", error); // log for debugging
+            break;
+    }
+}   
+            }
+        setIsLoading(false);
+    };
+
+    if (showWhatsappPrompt) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-8 text-white">
+                    <h2 className="text-2xl font-bold text-center text-yellow-400 mb-4">One Last Step!</h2>
+                    <p className="text-center mb-6">Please provide your WhatsApp number for order updates.</p>
+                    <form onSubmit={handleWhatsappSubmit}>
+                        <input
+                            type="tel"
+                            value={whatsapp}
+                            onChange={(e) => setWhatsapp(e.target.value)}
+                            placeholder="WhatsApp Number (e.g., 9876543210)"
+                            className="w-full p-3 mb-4 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            required
+                        />
+                        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+                        <button type="submit" disabled={isLoading} className="w-full bg-yellow-400 text-gray-900 font-bold p-3 rounded-lg hover:bg-yellow-500 transition duration-300 disabled:bg-gray-500">
+                            {isLoading ? 'Saving...' : 'Save and Continue'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 bg-grid-yellow-400/[0.2]">
+            <div className="w-full max-w-md bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 text-white border border-yellow-400/20">
+                <h2 className="text-3xl font-bold text-center text-yellow-400 mb-2">{isLogin ? 'Welcome Back!' : 'Join the Club'}</h2>
+                <p className="text-center text-gray-400 mb-8">{isLogin ? 'Sign in to get your grub on.' : 'Create an account to start ordering.'}</p>
+
+                <form onSubmit={handleEmailAuth}>
+                    {!isLogin && (
+                        <>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Email Address"
+                                className="w-full p-3 mb-4 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                required
+                            />
+                             <input
+                                type="tel"
+                                value={whatsapp}
+                                onChange={(e) => setWhatsapp(e.target.value)}
+                                placeholder="WhatsApp Number"
+                                className="w-full p-3 mb-4 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                required
+                            />
+                        </>
+                    )}
+                    {isLogin && (
+                         <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Email Address"
+                            className="w-full p-3 mb-4 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            required
+                        />
+                    )}
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password"
+                        className="w-full p-3 mb-4 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                    />
+                    {!isLogin && (
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirm Password"
+                            className="w-full p-3 mb-4 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            required
+                        />
+                    )}
+
+                    {error && <p className="text-red-400 text-sm text-center mb-4">{error}</p>}
+
+                    <button type="submit" disabled={isLoading} className="w-full bg-yellow-400 text-gray-900 font-bold p-3 rounded-lg hover:bg-yellow-500 transition duration-300 disabled:bg-gray-500">
+                        {isLoading ? 'Processing...' : (isLogin ? 'Login' : 'Sign Up')}
+                    </button>
+                </form>
+
+                <div className="flex items-center my-6">
+                    <div className="flex-grow border-t border-gray-600"></div>
+                    <span className="flex-shrink mx-4 text-gray-400">OR</span>
+                    <div className="flex-grow border-t border-gray-600"></div>
+                </div>
+
+                <button onClick={handleGoogleLogin} disabled={isLoading} className="w-full bg-white text-gray-700 font-semibold p-3 rounded-lg flex items-center justify-center hover:bg-gray-200 transition duration-300 disabled:bg-gray-400">
+                    <GoogleIcon />
+                    <span className="ml-2">Sign in with Google</span>
+                </button>
+
+                <p className="mt-8 text-center text-sm text-gray-400">
+                    {isLogin ? "Don't have an account?" : "Already have an account?"}
+                    <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-yellow-400 hover:underline ml-1">
+                        {isLogin ? 'Sign Up' : 'Login'}
+                    </button>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+// --- Main App Component (User View) ---
+const UserApp = ({ userData, setUserData }) => {
+    const [menu, setMenu] = useState([]);
+    const [cart, setCart] = useState({});
+    const [userOrders, setUserOrders] = useState([]);
+    const [view, setView] = useState('menu'); // 'menu', 'cart', 'checkout', 'orders'
+    const [deliveryOption, setDeliveryOption] = useState('delivery');
+    const [paymentInfo, setPaymentInfo] = useState({ upiId: '', qrCodeUrl: '' });
+    const [showModal, setShowModal] = useState(false);
+    const [modalContent, setModalContent] = useState({ title: '', message: '', timer: false });
+    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+    const [upiTransactionId, setUpiTransactionId] = useState('');
+    const upiTransactionIdRef = useRef(null);
+
+    // UseEffect to keep focus on the input field after each re-render
+    useEffect(() => {
+        // Focus the input field every time the component re-renders
+        if (upiTransactionIdRef.current) {
+            upiTransactionIdRef.current.focus();
+        }
+    }, [upiTransactionId]); 
+    const cartRef = doc(db, 'carts', userData.uid);
+
+    useEffect(() => {
+        const unsubscribeMenu = onSnapshot(collection(db, "menu"), (snapshot) => {
+            const menuData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setMenu(menuData);
+        });
+        
+        const unsubscribePayment = onSnapshot(doc(db, "config", "payment"), (doc) => {
+            if (doc.exists()) {
+                setPaymentInfo(doc.data());
+            }
+        });
+
+        const q = query(collection(db, "orders"), where("userId", "==", userData.uid));
+        const unsubscribeOrders = onSnapshot(q, (snapshot) => {
+            const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            ordersData.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+            setUserOrders(ordersData);
+        });
+
+        const unsubscribeCart = onSnapshot(cartRef, (doc) => {
+            if (doc.exists()) {
+                setCart(doc.data().items || {});
+            }
+        });
+
+        return () => {
+            unsubscribeMenu();
+            unsubscribePayment();
+            unsubscribeOrders();
+            unsubscribeCart();
+        };
+    }, [userData.uid]);
+
+    const updateCartInDb = async (newCart) => {
+        await setDoc(cartRef, { items: newCart });
+    };
+
+    const addToCart = (item) => {
+        const newCart = { ...cart };
+        const existingItem = newCart[item.id];
+        const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+
+        if (currentQtyInCart >= item.quantity) {
+            setModalContent({ title: 'Stock Limit', message: `Available Only ${item.quantity} Quantity`, timer: false });
+            setShowModal(true);
+            return;
+        }
+
+        if (existingItem) {
+            newCart[item.id] = { ...existingItem, quantity: existingItem.quantity + 1 };
+        } else {
+            newCart[item.id] = { ...item, quantity: 1 };
+        }
+        updateCartInDb(newCart);
+    };
+
+    const removeFromCart = (itemId) => {
+        const newCart = { ...cart };
+        const existingItem = newCart[itemId];
+
+        if (!existingItem) return;
+
+        if (existingItem.quantity > 1) {
+            newCart[itemId] = { ...existingItem, quantity: existingItem.quantity - 1 };
+        } else {
+            delete newCart[itemId];
+        }
+        updateCartInDb(newCart);
+    };
+
+    const cartCount = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
+    const cartTotal = Object.values(cart).reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
+    const deliveryCharge = deliveryOption === 'delivery' ? 10 : 0;
+    const finalTotal = cartTotal + deliveryCharge;
+
+    const placeOrder = async () => {
+        if (deliveryOption === 'delivery' && (!upiTransactionId || upiTransactionId.length < 12)) {
+            setModalContent({ title: 'Invalid Input', message: 'Please enter a valid 12-digit UPI Transaction ID.', timer: false });
+            setShowModal(true);
+            return;
+        }
+        
+        setIsPlacingOrder(true);
+        try {
+           await runTransaction(db, async (transaction) => {
+    // Phase 1: Read all documents first
+    const menuItemsRefs = Object.values(cart).map(item => doc(db, "menu", item.id));
+    const menuItemDocs = await Promise.all(menuItemsRefs.map(ref => transaction.get(ref)));
+
     // Phase 2: Now, perform all writes
     menuItemDocs.forEach((menuItemDoc, index) => {
         const cartItem = Object.values(cart)[index];
