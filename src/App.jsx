@@ -407,7 +407,7 @@ const UserApp = ({ userData, setUserData }) => {
         const currentQtyInCart = existingItem ? existingItem.quantity : 0;
 
         if (currentQtyInCart >= item.quantity) {
-            setModalContent({ title: 'Stock Limit', message: `You cannot add more than the available stock of ${item.quantity}.`, timer: false });
+            setModalContent({ title: 'Stock Limit', message: `Available Only ${item.quantity} Quantity`, timer: false });
             setShowModal(true);
             return;
         }
