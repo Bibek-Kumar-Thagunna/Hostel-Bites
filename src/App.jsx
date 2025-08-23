@@ -53,10 +53,7 @@ const db = getFirestore(app);
 
 // --- ICONS (Same as before) ---
 const CanteenIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M18.52 6.52a.75.75 0 00-1.04-1.04L12 10.94V3a.75.75 0 00-1.5 0v7.94L5.52 5.48a.75.75 0 10-1.04 1.04l5.25 5.25a.75.75 0 001.04 0l7.75-7.75z" />
-        <path d="M2.75 14.5a.75.75 0 000 1.5h14.5a.75.75 0 000-1.5H2.75z" />
-    </svg>
+    <span className="text-2xl">🍔</span>
 );
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 48 48">
