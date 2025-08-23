@@ -478,6 +478,23 @@ const UserApp = ({ userData, setUserData }) => {
 
     transaction.delete(cartRef);
 });
+            const newOrderData = {
+    userName: userData.displayName || userData.email,
+    orderType: deliveryOption,
+    totalAmount: finalTotal,
+    upiTransactionId: deliveryOption === 'delivery' ? upiTransactionId : 'N/A',
+    items: Object.values(cart)
+};
+
+// Send email notification to admin
+await fetch('/api/send-order-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+        orderDetails: newOrderData,
+        toEmail: 'YOUR_ADMIN_EMAIL@example.com' // <-- REPLACE WITH YOUR EMAIL
+    }),
+});
 
             if (deliveryOption === 'takeaway') {
                 setModalContent({ title: 'Order Placed!', message: 'Please collect your order from Room 510.', timer: false });
