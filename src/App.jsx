@@ -492,7 +492,7 @@ await fetch('/api/send-order-email', {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
         orderDetails: newOrderData,
-        toEmail: 'kumarvivek71075@gmail.com' // <-- REPLACE WITH YOUR EMAIL
+        toEmail: 'bibekthagunna102367009@gmail.com' // <-- REPLACE WITH YOUR EMAIL
     }),
 });
 
