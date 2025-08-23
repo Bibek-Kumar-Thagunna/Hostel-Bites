@@ -445,30 +445,39 @@ const UserApp = ({ userData, setUserData }) => {
         
         setIsPlacingOrder(true);
         try {
-            await runTransaction(db, async (transaction) => {
-                for (const cartItem of Object.values(cart)) {
-                    const menuItemRef = doc(db, "menu", cartItem.id);
-                    const menuItemDoc = await transaction.get(menuItemRef);
-                    if (!menuItemDoc.exists()) throw new Error(`Item ${cartItem.name} not found.`);
-                    const newQuantity = menuItemDoc.data().quantity - cartItem.quantity;
-                    if (newQuantity < 0) throw new Error(`Not enough stock for ${cartItem.name}.`);
-                    transaction.update(menuItemRef, { quantity: newQuantity });
-                }
+         await runTransaction(db, async (transaction) => {
+    // Phase 1: Read all documents first
+    const menuItemsRefs = Object.values(cart).map(item => doc(db, "menu", item.id));
+    const menuItemDocs = await Promise.all(menuItemsRefs.map(ref => transaction.get(ref)));
 
-                await addDoc(collection(db, "orders"), {
-                    userId: userData.uid,
-                    items: Object.values(cart),
-                    totalAmount: finalTotal,
-                    orderType: deliveryOption,
-                    status: deliveryOption === 'delivery' ? 'payment_pending' : 'preparing',
-                    createdAt: Timestamp.now(),
-                    userName: userData.displayName || userData.email,
-                    upiTransactionId: deliveryOption === 'delivery' ? upiTransactionId : 'N/A',
-                });
+    // Phase 2: Now, perform all writes
+    menuItemDocs.forEach((menuItemDoc, index) => {
+        const cartItem = Object.values(cart)[index];
+        if (!menuItemDoc.exists()) {
+            throw new Error(`Item ${cartItem.name} not found.`);
+        }
+        const newQuantity = menuItemDoc.data().quantity - cartItem.quantity;
+        if (newQuantity < 0) {
+            throw new Error(`Not enough stock for ${cartItem.name}.`);
+        }
+        transaction.update(menuItemDoc.ref, { quantity: newQuantity });
+    });
 
-                // Clear the cart in the transaction
-                transaction.delete(cartRef);
-            });
+    // Phase 3: Create the order and delete the cart
+    const newOrderRef = doc(collection(db, "orders")); // Generate a new doc ref for the order
+    transaction.set(newOrderRef, {
+        userId: userData.uid,
+        items: Object.values(cart),
+        totalAmount: finalTotal,
+        orderType: deliveryOption,
+        status: deliveryOption === 'delivery' ? 'payment_pending' : 'preparing',
+        createdAt: Timestamp.now(),
+        userName: userData.displayName || userData.email,
+        upiTransactionId: deliveryOption === 'delivery' ? upiTransactionId : 'N/A',
+    });
+
+    transaction.delete(cartRef);
+});
 
             if (deliveryOption === 'takeaway') {
                 setModalContent({ title: 'Order Placed!', message: 'Please collect your order from Room 510.', timer: false });
