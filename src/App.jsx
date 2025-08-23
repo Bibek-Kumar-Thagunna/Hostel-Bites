@@ -224,7 +224,7 @@ const AuthComponent = ({ setUserData }) => {
             break;
     }
 }   
-        }
+            }
         setIsLoading(false);
     };
 
@@ -445,7 +445,7 @@ const UserApp = ({ userData, setUserData }) => {
         
         setIsPlacingOrder(true);
         try {
-         await runTransaction(db, async (transaction) => {
+           await runTransaction(db, async (transaction) => {
     // Phase 1: Read all documents first
     const menuItemsRefs = Object.values(cart).map(item => doc(db, "menu", item.id));
     const menuItemDocs = await Promise.all(menuItemsRefs.map(ref => transaction.get(ref)));
