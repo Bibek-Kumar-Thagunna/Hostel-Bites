@@ -508,9 +508,9 @@ const AdminDashboard = ({ userData }) => {
                         aria-label="Add new menu item"
                         title="Add new menu item"
                     >
-                        <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" />
                         <span>Add New Item</span>
-                    </button>
+                </button>
                 </div>
             </div>
 
@@ -757,13 +757,13 @@ const AdminDashboard = ({ userData }) => {
                                 return (o.id?.toLowerCase?.().includes(q)) || (o.userName?.toLowerCase?.().includes(q));
                             }).map((order) => (
                                 <>
-                                    <tr key={order.id} className="border-b border-gray-100">
-                                        <td className="py-3 px-4 font-medium text-gray-900">{order.id.slice(-8)}</td>
+                                <tr key={order.id} className="border-b border-gray-100">
+                                    <td className="py-3 px-4 font-medium text-gray-900">{order.id.slice(-8)}</td>
                                         <td className="py-3 px-4 text-gray-900">{order.userName || order.customerName || 'Unknown'}</td>
-                                        <td className="py-3 px-4 text-gray-600">{order.items?.length || 0} items</td>
-                                        <td className="py-3 px-4 font-medium text-gray-900">₹{order.total || 0}</td>
-                                        <td className="py-3 px-4">
-                                            <select
+                                    <td className="py-3 px-4 text-gray-600">{order.items?.length || 0} items</td>
+                                    <td className="py-3 px-4 font-medium text-gray-900">₹{order.total || 0}</td>
+                                    <td className="py-3 px-4">
+                                        <select
                                                 value={order.status || 'payment_pending'}
                                                 onChange={async (e) => {
                                                     const res = await updateOrderStatus(order.id, e.target.value);
@@ -772,22 +772,22 @@ const AdminDashboard = ({ userData }) => {
                                                 className="px-2 py-1 rounded-full text-xs font-medium border border-gray-300 bg-white"
                                             >
                                                 <option value="payment_pending">Payment Pending</option>
-                                                <option value="preparing">Preparing</option>
+                                            <option value="preparing">Preparing</option>
                                                 <option value="ready_for_pickup">Ready</option>
-                                                <option value="out_for_delivery">Out for Delivery</option>
-                                                <option value="delivered">Delivered</option>
+                                            <option value="out_for_delivery">Out for Delivery</option>
+                                            <option value="delivered">Delivered</option>
                                                 <option value="cancelled">Cancelled</option>
-                                            </select>
-                                        </td>
-                                        <td className="py-3 px-4">
+                                        </select>
+                                    </td>
+                                    <td className="py-3 px-4">
                                             <button
                                                 className="text-blue-600 hover:text-blue-700 mr-2"
                                                 onClick={() => setOrderModal({ open: true, order, status: order.status || 'payment_pending', notes: order.notes || '', upiRef: order.upiTransactionId || '' })}
                                                 aria-label="Edit order"
                                                 title="Edit order"
                                             >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
+                                            <Edit className="w-4 h-4" />
+                                        </button>
                                             <button
                                                 className="text-gray-700 hover:text-gray-900 mr-2"
                                                 onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
@@ -813,10 +813,10 @@ const AdminDashboard = ({ userData }) => {
                                                     });
                                                 }}
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
                                     {expandedOrderId === order.id && (
                                         <tr className="bg-gray-50">
                                             <td colSpan={6} className="px-6 py-4">
@@ -1054,30 +1054,30 @@ const AdminDashboard = ({ userData }) => {
         };
 
         return (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Admin Profile</h2>
-                <div className="space-y-6">
-                    <div className="flex items-center space-x-4">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Admin Profile</h2>
+            <div className="space-y-6">
+                <div className="flex items-center space-x-4">
                         {profilePhoto && profilePhoto.trim() !== '' && !imageError ? (
-                            <img
+                        <img
                                 src={profilePhoto}
-                                alt="Profile"
-                                className="w-16 h-16 rounded-full object-cover"
-                                onError={() => setImageError(true)}
-                            />
-                        ) : (
-                            <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xl font-bold">
+                            alt="Profile"
+                            className="w-16 h-16 rounded-full object-cover"
+                            onError={() => setImageError(true)}
+                        />
+                    ) : (
+                        <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xl font-bold">
                                     {profileName?.charAt(0) || userData?.displayName?.charAt(0) || 'A'}
-                                </span>
-                            </div>
-                        )}
-                        <div>
-                            <h3 className="text-xl font-semibold">{profileName || userData?.displayName || 'Admin'}</h3>
-                            <p className="text-gray-600">{userData?.email}</p>
-                            <p className="text-sm text-orange-600 font-medium">Administrator</p>
+                            </span>
                         </div>
+                    )}
+                    <div>
+                            <h3 className="text-xl font-semibold">{profileName || userData?.displayName || 'Admin'}</h3>
+                        <p className="text-gray-600">{userData?.email}</p>
+                        <p className="text-sm text-orange-600 font-medium">Administrator</p>
                     </div>
+                </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -1090,23 +1090,23 @@ const AdminDashboard = ({ userData }) => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                            <h4 className="font-medium text-gray-900">Total Orders Managed</h4>
-                            <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                            <h4 className="font-medium text-gray-900">Menu Items</h4>
-                            <p className="text-2xl font-bold text-orange-600">{menuItems.length}</p>
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                        <h4 className="font-medium text-gray-900">Total Orders Managed</h4>
+                        <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
                     </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                        <h4 className="font-medium text-gray-900">Menu Items</h4>
+                        <p className="text-2xl font-bold text-orange-600">{menuItems.length}</p>
+                    </div>
+                </div>
 
                     <div className="flex justify-end">
                         <button disabled={savingProfile} onClick={saveProfile} className="btn-primary">{savingProfile ? 'Saving...' : 'Save Profile'}</button>
                     </div>
-                </div>
             </div>
-        );
+        </div>
+    );
     };
 
     const renderHelp = () => (

@@ -97,16 +97,7 @@ const UserProfile = ({ userData, orders, focusField }) => {
                     </div>
                     <button onClick={() => setPhotoModal(true)} className="md:hidden w-full px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                            <h4 className="font-medium text-gray-900">Total Orders</h4>
-                            <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                            <h4 className="font-medium text-gray-900">Total Spent</h4>
-                            <p className="text-2xl font-bold text-orange-600">₹{totalSpent}</p>
-                        </div>
-                    </div>
+                    {/* Stats removed as requested for user profile on all devices */}
                 </div>
 
                 {/* Right column: form */}
