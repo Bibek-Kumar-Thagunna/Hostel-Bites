@@ -6,7 +6,7 @@ import { DELIVERY_OPTIONS } from '../../constants/app';
 import { useNavigate } from 'react-router-dom';
 
 const CartSummary = ({ cart, cartTotal, onRemoveFromCart, onClearCart, onBack, onAddToCart }) => {
-    const [deliveryOption, setDeliveryOption] = useState(DELIVERY_OPTIONS.DELIVERY);
+    const [deliveryOption, setDeliveryOption] = useState(DELIVERY_OPTIONS.TAKEAWAY);
     const navigate = useNavigate();
 
     const deliveryCharge = deliveryOption === DELIVERY_OPTIONS.DELIVERY ? 10 : 0;

@@ -12,7 +12,7 @@ import QRCode from 'react-qr-code';
 const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [deliveryOption, setDeliveryOption] = useState(DELIVERY_OPTIONS.DELIVERY);
+    const [deliveryOption, setDeliveryOption] = useState(DELIVERY_OPTIONS.TAKEAWAY);
     const [notes, setNotes] = useState('');
     const [settings, setSettings] = useState({ upiId: '', upiQrUrl: '' });
     const [placing, setPlacing] = useState(false);
@@ -20,6 +20,13 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
     const [upiRef, setUpiRef] = useState('');
     const [copied, setCopied] = useState({ upi: false, amount: false });
     const { userData } = useAuth();
+
+    // Contact details prompt
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [roomNumber, setRoomNumber] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
+    const [roomError, setRoomError] = useState('');
+    const [whatsappError, setWhatsappError] = useState('');
 
     useEffect(() => {
         const unsub = subscribeAppSettings(setSettings);
@@ -60,6 +67,31 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
         }
     };
 
+    const sanitizeWhatsapp = (num) => {
+        if (!num) return '';
+        const digits = String(num).replace(/\D/g, '');
+        // If starts with 91 and length 12, strip country code
+        if (digits.length === 12 && digits.startsWith('91')) return digits.slice(2);
+        return digits;
+    };
+
+    const validateContact = () => {
+        let ok = true;
+        const rn = String(roomNumber).trim();
+        const wa = sanitizeWhatsapp(whatsapp);
+        setRoomError('');
+        setWhatsappError('');
+        if (rn.length < 1 || rn.length > 10) {
+            setRoomError('Enter your room number');
+            ok = false;
+        }
+        if (!/^([6-9][0-9]{9})$/.test(wa)) {
+            setWhatsappError('Enter a valid 10-digit WhatsApp number');
+            ok = false;
+        }
+        return ok;
+    };
+
     const placeOrder = async () => {
         if (!userData?.uid || placing) return;
         setPlacing(true);
@@ -73,7 +105,9 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
                 orderType: deliveryOption,
                 paymentMethod: 'upi',
                 notes,
-                upiTransactionId: upiRef || 'N/A'
+                upiTransactionId: upiRef || 'N/A',
+                roomNumber: String(roomNumber).trim(),
+                whatsapp: sanitizeWhatsapp(whatsapp)
             });
             onClearCart();
             setPlaced(true);
@@ -84,6 +118,14 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
         } finally {
             setPlacing(false);
         }
+    };
+
+    const onPlaceClick = () => {
+        if (!validateContact()) {
+            setShowContactModal(true);
+            return;
+        }
+        placeOrder();
     };
 
     if (items.length === 0) {
@@ -230,7 +272,7 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
                             {deliveryOption === DELIVERY_OPTIONS.DELIVERY && (
                                 <a href={upiLink || undefined} onClick={(e) => { if (!upiLink) e.preventDefault(); }} className={`block w-full text-center btn-primary ${!upiLink ? 'opacity-60 cursor-not-allowed' : ''}`} aria-disabled={!upiLink}>Open in UPI App</a>
                             )}
-                            <button disabled={placing || !isRefValid} onClick={placeOrder} className={`w-full btn-primary ${placing || !isRefValid ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                            <button disabled={placing || !isRefValid} onClick={onPlaceClick} className={`w-full btn-primary ${placing || !isRefValid ? 'opacity-60 cursor-not-allowed' : ''}`}>
                                 {placing ? 'Placing Order...' : deliveryOption === DELIVERY_OPTIONS.DELIVERY ? 'Place Order' : 'Place Order (Cash)'}
                             </button>
                             {placed && (
@@ -246,6 +288,36 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
                 {copied.upi ? 'UPI ID copied' : ''}
                 {copied.amount ? 'Amount copied' : ''}
             </div>
+
+            {/* Contact Details Modal */}
+            {showContactModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/30" onClick={() => setShowContactModal(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md mx-4 p-6">
+                        <div className="flex items-start justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Contact Details</h3>
+                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowContactModal(false)}>×</button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
+                                <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} className={`input-primary ${roomError ? 'ring-2 ring-red-200 border-red-300' : ''}`} placeholder="e.g., 510" />
+                                {roomError && <p className="text-xs text-red-600 mt-1">{roomError}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`input-primary ${whatsappError ? 'ring-2 ring-red-200 border-red-300' : ''}`} placeholder="10-digit number" />
+                                {whatsappError && <p className="text-xs text-red-600 mt-1">{whatsappError}</p>}
+                                <p className="text-xs text-gray-500 mt-1">We'll use this to contact you if needed.</p>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end space-x-3">
+                            <button onClick={() => setShowContactModal(false)} className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Cancel</button>
+                            <button onClick={() => { if (validateContact()) { setShowContactModal(false); placeOrder(); } }} className="px-4 py-2 rounded-xl bg-orange-600 text-white hover:bg-orange-700">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
