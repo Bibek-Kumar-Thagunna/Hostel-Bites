@@ -174,8 +174,9 @@ const NotificationCenter = ({ userData }) => {
                     </div>
 
                     {/* Mobile centered modal */}
-                    <div className="sm:hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[85vh]">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                    <div className="sm:hidden fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                        <div className="pointer-events-auto bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[80vh]">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-200">
                             <h3 className="font-bold text-gray-900">Notifications</h3>
                             <div className="flex items-center space-x-2">
                                 {unreadCount > 0 && (
@@ -185,8 +186,8 @@ const NotificationCenter = ({ userData }) => {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                        </div>
-                        <div className="max-h-[70vh] overflow-y-auto overscroll-contain">
+                            </div>
+                            <div className="max-h-[68vh] overflow-y-auto overscroll-contain">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Bell className="w-12 h-12 text-gray-300 mb-4" />
@@ -216,12 +217,13 @@ const NotificationCenter = ({ userData }) => {
                                     </div>
                                 ))
                             )}
-                        </div>
-                        {notifications.length > 0 && (
-                            <div className="p-4 border-t border-gray-200">
-                                <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
                             </div>
-                        )}
+                            {notifications.length > 0 && (
+                                <div className="p-4 border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
+                                    <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </>
             )}
