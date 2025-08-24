@@ -7,6 +7,7 @@ import { subscribeAppSettings, updateAppSettings } from '../../services/settings
 import MenuForm from './MenuForm';
 import { subscribeCategories, addCategory, updateCategory, deleteCategory as deleteCategorySvc } from '../../services/categories';
 import { auth, db, doc, setDoc, updateProfile } from '../../services/firebase';
+import { subscribeAdminNotifications, markAdminNotificationHandled } from '../../services/adminNotifications';
 
 const AdminDashboard = ({ userData }) => {
     const [searchParams] = useSearchParams();
@@ -39,6 +40,7 @@ const AdminDashboard = ({ userData }) => {
     const [savingOrder, setSavingOrder] = useState(false);
     const [categories, setCategories] = useState([]);
     const [categoryModal, setCategoryModal] = useState({ open: false, editing: null, name: '', icon: '', key: '' });
+    const [adminNotifs, setAdminNotifs] = useState([]);
 
     const ORDER_STATUS_OPTIONS = [
         'payment_pending',
@@ -114,12 +116,16 @@ const AdminDashboard = ({ userData }) => {
         // Load categories
         const unsubscribeCategories = subscribeCategories((cats) => setCategories(cats));
 
+        // Load admin notifications
+        const unsubscribeAdminNotifs = subscribeAdminNotifications((list) => setAdminNotifs(list));
+
         return () => {
             unsubscribeAnalytics();
             unsubscribeOrders();
             unsubscribeMenu();
             unsubscribeSettings();
             unsubscribeCategories();
+            unsubscribeAdminNotifs();
         };
     }, []);
 
@@ -710,37 +716,41 @@ const AdminDashboard = ({ userData }) => {
                     <span>Order alerts. Accept or Decline new orders.</span>
                 </div>
                 <div className="space-y-3">
-                    {orders
-                        .filter(o => ['payment_pending', 'pending'].includes(o.status || 'payment_pending'))
-                        .map((order) => (
-                            <div key={order.id} className="border border-gray-200 rounded-xl p-4 flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <div className="font-semibold text-gray-900">Order #{order.id.slice(-8)}</div>
-                                    <div className="text-sm text-gray-600">{order.userName || order.customerName || 'Unknown'} • ₹{order.total || 0} • {order.items?.length || 0} items</div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        className="px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-1"
-                                        onClick={async () => {
-                                            const res = await updateOrder(order.id, { status: 'preparing' });
-                                            if (res?.success) showToast('Order accepted', 'success'); else showToast(res?.error || 'Failed', 'error');
-                                        }}
-                                    >
-                                        <Check className="w-4 h-4" /> Accept
-                                    </button>
-                                    <button
-                                        className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1"
-                                        onClick={async () => {
-                                            const res = await updateOrder(order.id, { status: 'cancelled' });
-                                            if (res?.success) showToast('Order declined', 'success'); else showToast(res?.error || 'Failed', 'error');
-                                        }}
-                                    >
-                                        <XIcon className="w-4 h-4" /> Decline
-                                    </button>
-                                </div>
+                    {adminNotifs.filter(n => !n.handled && n.type === 'order_placed').map((n) => (
+                        <div key={n.id} className="border border-gray-200 rounded-xl p-4 flex items-start justify-between">
+                            <div className="space-y-1">
+                                <div className="font-semibold text-gray-900">Order #{String(n.orderId).slice(-8)}</div>
+                                <div className="text-sm text-gray-600">{n.userName || 'Unknown'} • ₹{n.total || 0} • {n.itemsCount || 0} items</div>
                             </div>
-                        ))}
-                    {orders.filter(o => (o.status || 'payment_pending') === 'payment_pending').length === 0 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    className="px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-1"
+                                    onClick={async () => {
+                                        const res = await updateOrder(n.orderId, { status: 'preparing' });
+                                        if (res?.success) {
+                                            await markAdminNotificationHandled(n.id, 'accepted', auth.currentUser?.uid);
+                                            showToast('Order accepted', 'success');
+                                        } else showToast(res?.error || 'Failed', 'error');
+                                    }}
+                                >
+                                    <Check className="w-4 h-4" /> Accept
+                                </button>
+                                <button
+                                    className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1"
+                                    onClick={async () => {
+                                        const res = await updateOrder(n.orderId, { status: 'cancelled' });
+                                        if (res?.success) {
+                                            await markAdminNotificationHandled(n.id, 'declined', auth.currentUser?.uid);
+                                            showToast('Order declined', 'success');
+                                        } else showToast(res?.error || 'Failed', 'error');
+                                    }}
+                                >
+                                    <XIcon className="w-4 h-4" /> Decline
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {adminNotifs.filter(n => !n.handled && n.type === 'order_placed').length === 0 && (
                         <div className="text-gray-500 text-center py-8">No new order notifications</div>
                     )}
                 </div>
