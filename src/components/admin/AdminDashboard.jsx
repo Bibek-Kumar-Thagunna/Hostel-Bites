@@ -68,6 +68,9 @@ const AdminDashboard = ({ userData }) => {
                 case 'overview':
                     setActiveTab('overview');
                     break;
+                case 'users':
+                    setActiveTab('users');
+                    break;
                 case 'menu':
                     setActiveTab('menu');
                     break;
