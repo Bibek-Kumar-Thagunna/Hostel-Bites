@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { CartProvider } from '../../contexts/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 const Layout = ({ children, userData }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const navigate = useNavigate();
 
     return (
         <CartProvider>
@@ -65,18 +67,20 @@ const Layout = ({ children, userData }) => {
                     </div>
                 </motion.main>
 
-                {/* Floating Action Button for Cart (Mobile) */}
-                <motion.div
-                    className="lg:hidden fixed bottom-6 right-6 z-40"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="bg-orange-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </button>
-                </motion.div>
+                {/* Floating Action Button for Cart (Mobile) - only for non-admin users */}
+                {!userData?.isAdmin && (
+                    <motion.div
+                        className="lg:hidden fixed bottom-6 right-6 z-40"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <button onClick={() => navigate('/app?section=cart')} className="bg-orange-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </button>
+                    </motion.div>
+                )}
             </div>
         </CartProvider>
     );
