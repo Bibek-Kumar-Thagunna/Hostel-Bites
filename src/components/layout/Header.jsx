@@ -1,10 +1,11 @@
 // Modern header component with search and navigation
 import React, { useState } from 'react';
-import { Menu, User, ShoppingCart } from 'lucide-react';
+import { Menu, User, ShoppingCart, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationCenter from '../common/NotificationCenter';
+import { auth, signOut } from '../../services/firebase';
 
 const Header = ({ userData, onMenuClick }) => {
     const [imageError, setImageError] = useState(false);
@@ -17,6 +18,25 @@ const Header = ({ userData, onMenuClick }) => {
     const location = useLocation();
     void location; // location retained in case of future route-based tweaks
 
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            navigate('/');
+        } catch (err) {
+            console.error('Logout failed:', err);
+        }
+    };
+
+    const goHome = () => {
+        if (userData?.isAdmin) {
+            navigate('/admin?section=overview');
+        } else if (userData) {
+            navigate('/app');
+        } else {
+            navigate('/');
+        }
+    };
+
     return (
         <header className={"fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-white/95 backdrop-blur-lg border-b border-gray-200"}>
             <div className="container mx-auto px-4">
@@ -24,21 +44,23 @@ const Header = ({ userData, onMenuClick }) => {
                     {/* Left Section */}
                     <div className="flex items-center space-x-4">
                         <button
-                            onClick={onMenuClick}
+                            onClick={goHome}
                             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            aria-label="Go to Home"
+                            title="Home"
                         >
                             <Menu className="w-6 h-6" />
                         </button>
 
                         {/* Logo */}
-                        <div className="flex items-center space-x-2 hover:scale-105 transition-transform">
+                        <button onClick={goHome} className="flex items-center space-x-2 hover:scale-105 transition-transform">
                             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-teal-500 rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-sm">🍔</span>
                             </div>
                             <span className={"text-xl font-bold hidden sm:block transition-colors text-gray-900"}>
                                 Hostel Bites
                             </span>
-                        </div>
+                        </button>
                     </div>
 
                     {/* Center Section - Removed search bar */}
@@ -97,6 +119,25 @@ const Header = ({ userData, onMenuClick }) => {
                                 {userData?.displayName || 'Guest'}
                             </span>
                         </motion.button>
+
+                        {/* Quick Logout (all users) */}
+                        <button
+                            onClick={handleLogout}
+                            className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            aria-label="Logout"
+                            title="Logout"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span className="text-sm font-medium">Logout</span>
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+                            aria-label="Logout"
+                            title="Logout"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
             </div>
