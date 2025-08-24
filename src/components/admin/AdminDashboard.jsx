@@ -1,7 +1,7 @@
 // Modern admin dashboard with analytics and management tools
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { TrendingUp, Users, DollarSign, Package, Star, Clock, AlertCircle, Activity, PieChart, BarChart3, Settings, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Package, Star, Clock, AlertCircle, Activity, PieChart, BarChart3, Settings, Plus, Edit, Trash2, Eye, Bell, Check, X as XIcon } from 'lucide-react';
 import { getAdminAnalytics, getRecentOrders, getMenuItems, updateMenuItem, addMenuItem, deleteMenuItem, updateOrderStatus, updateOrder, deleteOrder } from '../../services/admin';
 import { subscribeAppSettings, updateAppSettings } from '../../services/settings';
 import MenuForm from './MenuForm';
@@ -67,6 +67,9 @@ const AdminDashboard = ({ userData }) => {
                     break;
                 case 'orders':
                     setActiveTab('orders');
+                    break;
+                case 'notifications':
+                    setActiveTab('notifications');
                     break;
                 case 'analytics':
                     setActiveTab('analytics');
@@ -698,6 +701,53 @@ const AdminDashboard = ({ userData }) => {
         </div>
     );
 
+    const renderNotifications = () => (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-2 mb-4 text-gray-600">
+                    <Bell className="w-5 h-5" />
+                    <span>Order alerts. Accept or Decline new orders.</span>
+                </div>
+                <div className="space-y-3">
+                    {orders
+                        .filter(o => (o.status || 'payment_pending') === 'payment_pending')
+                        .map((order) => (
+                            <div key={order.id} className="border border-gray-200 rounded-xl p-4 flex items-start justify-between">
+                                <div className="space-y-1">
+                                    <div className="font-semibold text-gray-900">Order #{order.id.slice(-8)}</div>
+                                    <div className="text-sm text-gray-600">{order.userName || order.customerName || 'Unknown'} • ₹{order.total || 0} • {order.items?.length || 0} items</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        className="px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-1"
+                                        onClick={async () => {
+                                            const res = await updateOrder(order.id, { status: 'preparing' });
+                                            if (res?.success) showToast('Order accepted', 'success'); else showToast(res?.error || 'Failed', 'error');
+                                        }}
+                                    >
+                                        <Check className="w-4 h-4" /> Accept
+                                    </button>
+                                    <button
+                                        className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1"
+                                        onClick={async () => {
+                                            const res = await updateOrder(order.id, { status: 'cancelled' });
+                                            if (res?.success) showToast('Order declined', 'success'); else showToast(res?.error || 'Failed', 'error');
+                                        }}
+                                    >
+                                        <XIcon className="w-4 h-4" /> Decline
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    {orders.filter(o => (o.status || 'payment_pending') === 'payment_pending').length === 0 && (
+                        <div className="text-gray-500 text-center py-8">No new order notifications</div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+
     const renderProfile = () => {
         const saveProfile = async () => {
             setSavingProfile(true);
@@ -802,6 +852,7 @@ const AdminDashboard = ({ userData }) => {
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'menu' && renderMenuManagement()}
                     {activeTab === 'orders' && renderOrderManagement()}
+                    {activeTab === 'notifications' && renderNotifications()}
                     {activeTab === 'analytics' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics</h2>

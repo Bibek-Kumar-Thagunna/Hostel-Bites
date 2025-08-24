@@ -16,7 +16,8 @@ import {
     ChefHat,
     BarChart3,
     Activity,
-    Package as PackageIcon
+    Package as PackageIcon,
+    Bell
 } from 'lucide-react';
 import { signOut } from '../../services/firebase';
 import { auth } from '../../services/firebase';
@@ -37,6 +38,7 @@ const Sidebar = ({ userData, onClose }) => {
 
     const adminMenuItems = [
         { id: 'admin-overview', label: 'Overview', icon: Activity, path: '/admin?section=overview' },
+        { id: 'admin-notifications', label: 'Notifications', icon: Bell, path: '/admin?section=notifications' },
         { id: 'admin-menu', label: 'Menu Management', icon: ChefHat, path: '/admin?section=menu' },
         { id: 'admin-orders', label: 'Order Management', icon: BarChart3, path: '/admin?section=orders' },
         { id: 'admin-settings', label: 'Settings', icon: Settings, path: '/admin?section=settings' },
