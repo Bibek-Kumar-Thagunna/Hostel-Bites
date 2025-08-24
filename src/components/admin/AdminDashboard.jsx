@@ -9,6 +9,7 @@ import { subscribeCategories, addCategory, updateCategory, deleteCategory as del
 import { subscribeUsers } from '../../services/users';
 import { auth, db, doc, setDoc, updateProfile, collection, onSnapshot } from '../../services/firebase';
 import { subscribeAdminNotifications, markAdminNotificationHandled } from '../../services/adminNotifications';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 // Users tab component (separate to allow hooks)
 const UsersTab = ({ allUsers, usersSearch, setUsersSearch, userOrderCounts }) => {
@@ -162,6 +163,7 @@ const AdminDashboard = ({ userData }) => {
     const [allUsers, setAllUsers] = useState([]);
     const [usersSearch, setUsersSearch] = useState('');
     const [userOrderCounts, setUserOrderCounts] = useState({});
+    const [confirmState, setConfirmState] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger', confirmText: 'Confirm' });
 
     const ORDER_STATUS_OPTIONS = [
         'payment_pending',
@@ -532,14 +534,19 @@ const AdminDashboard = ({ userData }) => {
                                 </button>
                                 <button
                                     onClick={async () => {
-                                        if (confirm(`Delete ${item.name}? This cannot be undone.`)) {
-                                            const result = await deleteMenuItem(item.id);
-                                            if (result?.success) {
-                                                showToast('Menu item deleted', 'success');
-                                            } else {
-                                                showToast(result?.error || 'Failed to delete item', 'error');
+                                        setConfirmState({
+                                            open: true,
+                                            title: 'Delete item?',
+                                            message: `Delete ${item.name}? This cannot be undone.`,
+                                            variant: 'danger',
+                                            confirmText: 'Delete',
+                                            onConfirm: async () => {
+                                                setConfirmState(s => ({ ...s, open: false }));
+                                                const result = await deleteMenuItem(item.id);
+                                                if (result?.success) showToast('Menu item deleted', 'success');
+                                                else showToast(result?.error || 'Failed to delete item', 'error');
                                             }
-                                        }
+                                        });
                                     }}
                                     className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                                     aria-label="Delete item"
@@ -646,10 +653,18 @@ const AdminDashboard = ({ userData }) => {
                                         <div className="space-x-2">
                                             <button className="px-3 py-1 rounded-lg border" onClick={() => setCategoryModal({ open: true, editing: c, name: c.name, icon: c.icon, key: c.key })}>Edit</button>
                                             <button className="px-3 py-1 rounded-lg border border-red-300 text-red-700" onClick={async () => {
-                                                if (confirm(`Delete category ${c.name}?`)) {
-                                                    const res = await deleteCategorySvc(c.id);
-                                                    if (!res?.success) showToast(res?.error || 'Failed to delete category', 'error');
-                                                }
+                                                setConfirmState({
+                                                    open: true,
+                                                    title: 'Delete category?',
+                                                    message: `Delete category ${c.name}?`,
+                                                    variant: 'danger',
+                                                    confirmText: 'Delete',
+                                                    onConfirm: async () => {
+                                                        setConfirmState(s => ({ ...s, open: false }));
+                                                        const res = await deleteCategorySvc(c.id);
+                                                        if (!res?.success) showToast(res?.error || 'Failed to delete category', 'error');
+                                                    }
+                                                });
                                             }}>Delete</button>
                                         </div>
                                     </div>
@@ -784,10 +799,18 @@ const AdminDashboard = ({ userData }) => {
                                             <button
                                                 className="text-red-600 hover:text-red-700"
                                                 onClick={async () => {
-                                                    if (confirm(`Delete order ${order.id.slice(-8)}?`)) {
-                                                        const res = await deleteOrder(order.id);
-                                                        if (res?.success) showToast('Order deleted', 'success'); else showToast(res?.error || 'Failed to delete order', 'error');
-                                                    }
+                                                    setConfirmState({
+                                                        open: true,
+                                                        title: 'Delete order?',
+                                                        message: `Delete order ${order.id.slice(-8)}?`,
+                                                        variant: 'danger',
+                                                        confirmText: 'Delete',
+                                                        onConfirm: async () => {
+                                                            setConfirmState(s => ({ ...s, open: false }));
+                                                            const res = await deleteOrder(order.id);
+                                                            if (res?.success) showToast('Order deleted', 'success'); else showToast(res?.error || 'Failed to delete order', 'error');
+                                                        }
+                                                    });
                                                 }}
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -1162,7 +1185,7 @@ const AdminDashboard = ({ userData }) => {
                                     onClick={() => {
                                         const upiPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/;
                                         if (settings.upiId && !upiPattern.test(settings.upiId)) {
-                                            alert('Please enter a valid UPI ID (e.g., name@bank)');
+                                            setToast({ show: true, message: 'Enter a valid UPI ID (e.g., name@bank)', variant: 'error' });
                                             return;
                                         }
                                         updateAppSettings(settings);
@@ -1279,6 +1302,15 @@ const AdminDashboard = ({ userData }) => {
                     </div>
                 </div>
             )}
+            <ConfirmDialog
+                open={confirmState.open}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+                onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+                onConfirm={confirmState.onConfirm}
+            />
         </div>
     );
 };

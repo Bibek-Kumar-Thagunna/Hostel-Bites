@@ -4,10 +4,12 @@ import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, Gift, MapPin, Clock, India
 import { formatCurrency } from '../../utils/helpers';
 import { DELIVERY_OPTIONS } from '../../constants/app';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const CartSummary = ({ cart, cartTotal, onRemoveFromCart, onClearCart, onBack, onAddToCart }) => {
     const [deliveryOption, setDeliveryOption] = useState(DELIVERY_OPTIONS.TAKEAWAY);
     const navigate = useNavigate();
+    const [confirmState, setConfirmState] = useState({ open: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm', variant: 'danger' });
 
     const deliveryCharge = deliveryOption === DELIVERY_OPTIONS.DELIVERY ? 10 : 0;
     const finalTotal = cartTotal + deliveryCharge;
@@ -87,7 +89,19 @@ const CartSummary = ({ cart, cartTotal, onRemoveFromCart, onClearCart, onBack, o
                         <p className="font-bold text-gray-900">{itemCount}</p>
                     </div>
                     <button
-                        onClick={onClearCart}
+                        onClick={() => {
+                            setConfirmState({
+                                open: true,
+                                title: 'Clear cart?',
+                                message: `Remove all ${itemCount} item${itemCount === 1 ? '' : 's'} from your cart?`,
+                                confirmText: 'Clear',
+                                variant: 'danger',
+                                onConfirm: () => {
+                                    setConfirmState(s => ({ ...s, open: false }));
+                                    onClearCart();
+                                }
+                            });
+                        }}
                         className="flex items-center space-x-2 text-red-500 hover:text-red-600 transition-colors hover:bg-red-50 px-3 py-2 rounded-xl"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -144,7 +158,23 @@ const CartSummary = ({ cart, cartTotal, onRemoveFromCart, onClearCart, onBack, o
                             <div className="flex items-center space-x-3">
                                 <div className="flex items-center space-x-2 bg-white rounded-lg p-1 shadow-sm">
                                     <button
-                                        onClick={() => onRemoveFromCart(item.id)}
+                                        onClick={() => {
+                                            if (item.quantity > 1) {
+                                                onRemoveFromCart(item.id);
+                                                return;
+                                            }
+                                            setConfirmState({
+                                                open: true,
+                                                title: 'Remove item?',
+                                                message: `Remove ${item.name} from your cart?`,
+                                                confirmText: 'Remove',
+                                                variant: 'danger',
+                                                onConfirm: () => {
+                                                    setConfirmState(s => ({ ...s, open: false }));
+                                                    onRemoveFromCart(item.id);
+                                                }
+                                            });
+                                        }}
                                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-red-50 hover:text-red-600 transition-all"
                                     >
                                         <Minus className="w-4 h-4" />
@@ -250,6 +280,15 @@ const CartSummary = ({ cart, cartTotal, onRemoveFromCart, onClearCart, onBack, o
             >
                 Proceed to Checkout • {formatCurrency(finalTotal)}
             </button>
+            <ConfirmDialog
+                open={confirmState.open}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                variant={confirmState.variant}
+                onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+                onConfirm={confirmState.onConfirm}
+            />
         </div>
     );
 };

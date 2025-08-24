@@ -8,6 +8,7 @@ import { subscribeAppSettings } from '../../services/settings';
 import { createOrder } from '../../services/orders';
 import { useAuth } from '../../hooks/useAuth';
 import QRCode from 'react-qr-code';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
     const [searchParams, setSearchParams] = useSearchParams();

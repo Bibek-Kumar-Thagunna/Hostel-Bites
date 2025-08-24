@@ -20,6 +20,7 @@ import {
     Bell
 } from 'lucide-react';
 import { signOut } from '../../services/firebase';
+import ConfirmDialog from '../common/ConfirmDialog';
 import { auth } from '../../services/firebase';
 
 const Sidebar = ({ userData, onClose }) => {
@@ -58,13 +59,24 @@ const Sidebar = ({ userData, onClose }) => {
         if (onClose) onClose();
     };
 
+    const [confirmState, setConfirmState] = useState({ open: false });
     const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            navigate('/');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
+        setConfirmState({
+            open: true,
+            title: 'Sign out?',
+            message: 'You can sign in again anytime.',
+            confirmText: 'Sign Out',
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmState({ open: false });
+                try {
+                    await signOut(auth);
+                    navigate('/');
+                } catch (error) {
+                    console.error('Error signing out:', error);
+                }
+            }
+        });
     };
 
     const MenuItem = ({ item, isActive, onClick }) => (
@@ -167,6 +179,15 @@ const Sidebar = ({ userData, onClose }) => {
                     <LogOut className="w-5 h-5" />
                     <span className="font-medium">Sign Out</span>
                 </motion.button>
+                <ConfirmDialog
+                    open={confirmState.open}
+                    title={confirmState.title}
+                    message={confirmState.message}
+                    confirmText={confirmState.confirmText}
+                    variant={confirmState.variant}
+                    onCancel={() => setConfirmState({ open: false })}
+                    onConfirm={confirmState.onConfirm}
+                />
 
                 {/* App Version */}
                 <div className="mt-4 text-center">
