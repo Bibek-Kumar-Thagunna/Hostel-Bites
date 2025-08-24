@@ -1,5 +1,6 @@
 // Modern notification center with real-time updates
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, X, CheckCircle, AlertCircle, Info, Clock, Package, Star, Truck, MessageCircle, ChefHat } from 'lucide-react';
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../services/notifications';
 
@@ -119,8 +120,8 @@ const NotificationCenter = ({ userData }) => {
 
             {isOpen && (
                 <>
-                    {/* Overlay */}
-                    <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setIsOpen(false)} />
+                    {/* Overlay (desktop only) */}
+                    <div className="hidden sm:block fixed inset-0 z-40 bg-black/40" onClick={() => setIsOpen(false)} />
 
                     {/* Desktop dropdown */}
                     <div className="hidden sm:block absolute right-0 mt-2 w-96 max-h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
@@ -173,9 +174,11 @@ const NotificationCenter = ({ userData }) => {
                         )}
                     </div>
 
-                    {/* Mobile centered modal */}
-                    <div className="sm:hidden fixed inset-0 z-[60] flex items-center justify-center">
-                        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[80vh]">
+                    {/* Mobile centered modal via portal to escape header stacking context */}
+                    {createPortal(
+                        <div className="sm:hidden fixed inset-0 z-[100] flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/40" onClick={() => setIsOpen(false)} />
+                            <div className="relative z-[101] bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[80vh]">
                             <div className="flex items-center justify-between p-4 border-b border-gray-200">
                             <h3 className="font-bold text-gray-900">Notifications</h3>
                             <div className="flex items-center space-x-2">
@@ -223,8 +226,8 @@ const NotificationCenter = ({ userData }) => {
                                     <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
                                 </div>
                             )}
-                        </div>
-                    </div>
+                            </div>
+                        </div>, document.body)}
                 </>
             )}
         </div>
