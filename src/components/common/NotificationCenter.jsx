@@ -8,6 +8,15 @@ const NotificationCenter = ({ userData }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
+    // Prevent background scroll when the mobile sheet is open
+    useEffect(() => {
+        if (isOpen) {
+            const original = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => { document.body.style.overflow = original; };
+        }
+    }, [isOpen]);
+
     useEffect(() => {
         if (userData?.uid) {
             const unsubscribe = getUserNotifications(userData.uid, (notificationsData) => {
@@ -111,7 +120,7 @@ const NotificationCenter = ({ userData }) => {
             {isOpen && (
                 <>
                     {/* Overlay */}
-                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+                    <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setIsOpen(false)} />
 
                     {/* Desktop dropdown */}
                     <div className="hidden sm:block absolute right-0 mt-2 w-96 max-h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
@@ -165,7 +174,7 @@ const NotificationCenter = ({ userData }) => {
                     </div>
 
                     {/* Mobile bottom sheet */}
-                    <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 max-h-[75vh]">
+                    <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 h-[85vh]">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
                             <h3 className="font-bold text-gray-900">Notifications</h3>
                             <div className="flex items-center space-x-2">
@@ -177,7 +186,7 @@ const NotificationCenter = ({ userData }) => {
                                 </button>
                             </div>
                         </div>
-                        <div className="max-h-[60vh] overflow-y-auto">
+                        <div className="h-[72vh] overflow-y-auto overscroll-contain">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Bell className="w-12 h-12 text-gray-300 mb-4" />
