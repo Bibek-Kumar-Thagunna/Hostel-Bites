@@ -44,10 +44,10 @@ const Header = ({ userData, onMenuClick }) => {
                     {/* Left Section */}
                     <div className="flex items-center space-x-4">
                         <button
-                            onClick={goHome}
+                            onClick={onMenuClick}
                             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                            aria-label="Go to Home"
-                            title="Home"
+                            aria-label="Open menu"
+                            title="Menu"
                         >
                             <Menu className="w-6 h-6" />
                         </button>
