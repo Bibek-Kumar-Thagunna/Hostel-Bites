@@ -75,9 +75,18 @@ const UserProfile = ({ userData, orders, focusField }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
                         <div className="flex gap-2">
                             <input className="input-primary flex-1" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="10-digit number" />
-                            <a href={whatsapp ? `https://wa.me/91${String(whatsapp).replace(/\D/g,'')}` : undefined} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Verify</a>
+                            <button
+                                onClick={async () => {
+                                    const resp = await fetch('/api/verify-whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumber: whatsapp }) });
+                                    const data = await resp.json();
+                                    if (data?.normalized) setWhatsapp(data.normalized);
+                                    alert(data?.message || (data?.success ? 'Verified' : 'Verification failed'));
+                                }}
+                                className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50"
+                            >Background Verify</button>
+                            <a href={whatsapp ? `https://wa.me/91${String(whatsapp).replace(/\D/g,'')}` : undefined} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Open WA</a>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Tap Verify to open WhatsApp and confirm the number works.</p>
+                        <p className="text-xs text-gray-500 mt-1">Background verify simulates a check; Open WA lets you send a test message.</p>
                     </div>
                 </div>
 
