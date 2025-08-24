@@ -34,6 +34,19 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
         return () => unsub();
     }, []);
 
+    // Prefill contact from profile
+    useEffect(() => {
+        if (!userData) return;
+        if (userData.roomNumber && !String(roomNumber || '').trim()) {
+            setRoomNumber(String(userData.roomNumber));
+        }
+        if (userData.whatsapp && !String(whatsapp || '').trim()) {
+            // sanitize to last 10 digits if includes +91
+            const digits = String(userData.whatsapp).replace(/\D/g, '');
+            setWhatsapp(digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits.slice(-10));
+        }
+    }, [userData?.roomNumber, userData?.whatsapp]);
+
     // Initialize from URL param (coming from cart)
     useEffect(() => {
         const d = searchParams.get('delivery');
@@ -122,11 +135,12 @@ const Checkout = ({ cart, cartTotal, onBack, onClearCart }) => {
     };
 
     const onPlaceClick = () => {
-        if (!validateContact()) {
-            setShowContactModal(true);
+        // If prefilled and valid, skip prompt
+        if (validateContact()) {
+            placeOrder();
             return;
         }
-        placeOrder();
+        setShowContactModal(true);
     };
 
     if (items.length === 0) {

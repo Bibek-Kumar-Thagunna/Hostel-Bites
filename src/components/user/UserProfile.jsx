@@ -73,38 +73,53 @@ const UserProfile = ({ userData, orders, focusField }) => {
     }, [focusField]);
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-md mx-auto">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-md md:max-w-2xl lg:max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
             </div>
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    {photo && !imageError ? (
-                        <img src={photo} alt="Profile" className="w-16 h-16 rounded-full object-cover" onError={() => setImageError(true)} />
-                    ) : (
-                        <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-xl font-bold">{name?.charAt(0) || userData?.displayName?.charAt(0) || 'U'}</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Left column: avatar + stats */}
+                <div className="space-y-6 md:col-span-1">
+                    <div className="flex items-center gap-4 md:gap-6">
+                        {photo && !imageError ? (
+                            <img src={photo} alt="Profile" className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover" onError={() => setImageError(true)} />
+                        ) : (
+                            <div className="w-16 h-16 md:w-20 md:h-20 bg-orange-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xl md:text-2xl font-bold">{name?.charAt(0) || userData?.displayName?.charAt(0) || 'U'}</span>
+                            </div>
+                        )}
+                        <div className="min-w-0">
+                            <h3 className="text-xl md:text-2xl font-semibold truncate">{name || userData?.displayName || 'User'}</h3>
+                            <p className="text-gray-600 truncate max-w-[200px] md:max-w-[400px] lg:max-w-none">{userData?.email}</p>
                         </div>
-                    )}
-                    <div className="min-w-0">
-                        <h3 className="text-xl font-semibold truncate">{name || userData?.displayName || 'User'}</h3>
-                        <p className="text-gray-600 truncate max-w-[200px] sm:max-w-none">{userData?.email}</p>
+                        <div className="flex-1 hidden md:block" />
+                        <button onClick={() => setPhotoModal(true)} className="hidden md:inline-flex px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
                     </div>
-                    <div className="flex-1 hidden md:block" />
-                    <button onClick={() => setPhotoModal(true)} className="hidden md:inline-flex px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
-                </div>
-                {/* Mobile change photo button */}
-                <button onClick={() => setPhotoModal(true)} className="md:hidden w-full px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
+                    <button onClick={() => setPhotoModal(true)} className="md:hidden w-full px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                        <input className="input-primary" value={name} onChange={(e) => setName(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <h4 className="font-medium text-gray-900">Total Orders</h4>
+                            <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <h4 className="font-medium text-gray-900">Total Spent</h4>
+                            <p className="text-2xl font-bold text-orange-600">₹{totalSpent}</p>
+                        </div>
                     </div>
-                    {/* Removed Advanced raw URL entry by default to keep it professional */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
-                        <input ref={roomRef} className="input-primary" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="e.g., 510" />
+                </div>
+
+                {/* Right column: form */}
+                <div className="space-y-6 md:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                            <input className="input-primary" value={name} onChange={(e) => setName(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
+                            <input ref={roomRef} className="input-primary" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="e.g., 510" />
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
@@ -155,25 +170,14 @@ const UserProfile = ({ userData, orders, focusField }) => {
                                 <span className="inline-flex items-center whitespace-nowrap text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">Not verified</span>
                             )}
                         </div>
-                        {verifyMsg && (
+                        {verifyMsg && (!verifyOk || !whatsappVerifiedAt) && (
                             <p className={`text-xs mt-1 ${verifyOk ? 'text-green-700' : 'text-red-600'}`}>{verifyMsg}</p>
                         )}
                     </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                        <h4 className="font-medium text-gray-900">Total Orders</h4>
-                        <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
+                    <div className="flex justify-end">
+                        <button disabled={saving} onClick={saveProfile} className="btn-primary w-full md:w-auto">{saving ? 'Saving...' : 'Save Profile'}</button>
                     </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                        <h4 className="font-medium text-gray-900">Total Spent</h4>
-                        <p className="text-2xl font-bold text-orange-600">₹{totalSpent}</p>
-                    </div>
-                </div>
-
-                <div className="flex justify-end md:justify-end">
-                    <button disabled={saving} onClick={saveProfile} className="btn-primary w-full md:w-auto">{saving ? 'Saving...' : 'Save Profile'}</button>
                 </div>
             </div>
 

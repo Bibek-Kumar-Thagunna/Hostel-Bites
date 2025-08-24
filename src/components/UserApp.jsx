@@ -283,7 +283,7 @@ const UserApp = ({ userData }) => {
 
                         {/* Menu Grid */}
                         {isLoading ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                                 {[...Array(6)].map((_, index) => (
                                     <div key={index} className="bg-white rounded-2xl p-6 animate-pulse">
                                         <div className="w-full h-48 bg-gray-200 rounded-xl mb-4"></div>
@@ -296,7 +296,7 @@ const UserApp = ({ userData }) => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                                 {filteredMenu.map((item, index) => (
                                     <motion.div
                                         key={item.id}
