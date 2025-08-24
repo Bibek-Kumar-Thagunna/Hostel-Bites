@@ -10,6 +10,123 @@ import { subscribeUsers } from '../../services/users';
 import { auth, db, doc, setDoc, updateProfile, collection, onSnapshot } from '../../services/firebase';
 import { subscribeAdminNotifications, markAdminNotificationHandled } from '../../services/adminNotifications';
 
+// Users tab component (separate to allow hooks)
+const UsersTab = ({ allUsers, usersSearch, setUsersSearch, userOrderCounts }) => {
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedOrders, setSelectedOrders] = useState([]);
+    const [ordersLoading, setOrdersLoading] = useState(false);
+
+    useEffect(() => {
+        if (!selectedUser) return;
+        setOrdersLoading(true);
+        const unsub = subscribeOrdersByUser(selectedUser.id, (list) => {
+            setSelectedOrders(list);
+            setOrdersLoading(false);
+        });
+        return () => unsub();
+    }, [selectedUser?.id]);
+
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Users</h2>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="mb-4">
+                    <input
+                        value={usersSearch}
+                        onChange={(e) => setUsersSearch(e.target.value)}
+                        placeholder="Search by name, room or WhatsApp..."
+                        className="input-primary w-full md:w-96"
+                    />
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-200 text-left text-sm text-gray-600">
+                                <th className="py-3 px-4">Name</th>
+                                <th className="py-3 px-4">Room</th>
+                                <th className="py-3 px-4">WhatsApp</th>
+                                <th className="py-3 px-4">WA Verified</th>
+                                <th className="py-3 px-4">Orders</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {allUsers.filter((u) => {
+                                if (!usersSearch.trim()) return true;
+                                const q = usersSearch.toLowerCase();
+                                return (
+                                    (u.displayName || '').toLowerCase().includes(q) ||
+                                    String(u.roomNumber || '').toLowerCase().includes(q) ||
+                                    String(u.whatsapp || '').toLowerCase().includes(q)
+                                );
+                            }).map((u) => (
+                                <tr
+                                    key={u.id}
+                                    className={`border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedUser?.id === u.id ? 'bg-orange-50' : ''}`}
+                                    onClick={() => setSelectedUser(u)}
+                                >
+                                    <td className="py-3 px-4 text-gray-900 font-medium">{u.displayName || '—'}</td>
+                                    <td className="py-3 px-4 text-gray-700">{u.roomNumber || '—'}</td>
+                                    <td className="py-3 px-4 text-gray-700">{u.whatsapp || '—'}</td>
+                                    <td className="py-3 px-4">
+                                        {u.whatsappVerifiedAt ? (
+                                            <span title={u.whatsappVerifiedAt?.toDate ? u.whatsappVerifiedAt.toDate().toLocaleString() : ''} className="inline-flex items-center text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">Verified</span>
+                                        ) : (
+                                            <span className="inline-flex items-center text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">Not verified</span>
+                                        )}
+                                    </td>
+                                    <td className="py-3 px-4 text-gray-700">{userOrderCounts[u.id] || 0}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {selectedUser && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-900">{selectedUser.displayName || 'User'} - Order History</h3>
+                        <button className="px-3 py-2 rounded-xl border" onClick={() => setSelectedUser(null)}>Close</button>
+                    </div>
+                    {ordersLoading ? (
+                        <div className="py-8 text-center text-gray-500">Loading orders…</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-gray-200 text-left text-sm text-gray-600">
+                                        <th className="py-3 px-4">Order ID</th>
+                                        <th className="py-3 px-4">Items</th>
+                                        <th className="py-3 px-4">Total</th>
+                                        <th className="py-3 px-4">Status</th>
+                                        <th className="py-3 px-4">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedOrders.map((order) => (
+                                        <tr key={order.id} className="border-b border-gray-100">
+                                            <td className="py-3 px-4 font-medium text-gray-900">{order.id.slice(-8)}</td>
+                                            <td className="py-3 px-4 text-gray-600">{order.items?.length || 0} items</td>
+                                            <td className="py-3 px-4 font-medium text-gray-900">₹{order.total || 0}</td>
+                                            <td className="py-3 px-4 text-gray-700">{order.status || 'payment_pending'}</td>
+                                            <td className="py-3 px-4 text-gray-600">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : ''}</td>
+                                        </tr>
+                                    ))}
+                                    {selectedOrders.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="py-6 text-center text-gray-500">No orders yet.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AdminDashboard = ({ userData }) => {
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState('overview');
@@ -1002,7 +1119,14 @@ const AdminDashboard = ({ userData }) => {
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'menu' && renderMenuManagement()}
                     {activeTab === 'orders' && renderOrderManagement()}
-                    {activeTab === 'users' && renderUsers()}
+                    {activeTab === 'users' && (
+                        <UsersTab
+                            allUsers={allUsers}
+                            usersSearch={usersSearch}
+                            setUsersSearch={setUsersSearch}
+                            userOrderCounts={userOrderCounts}
+                        />
+                    )}
                     {activeTab === 'notifications' && renderNotifications()}
                     {activeTab === 'analytics' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
