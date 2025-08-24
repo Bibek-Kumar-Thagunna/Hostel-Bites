@@ -83,15 +83,7 @@ const UserProfile = ({ userData, orders, focusField }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
                         <input className="input-primary" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
-                    <div>
-                        <button className="text-sm text-gray-600 underline" onClick={() => setShowAdvanced(v => !v)}>{showAdvanced ? 'Hide' : 'Show'} Advanced</button>
-                        {showAdvanced && (
-                            <div className="mt-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL</label>
-                                <input className="input-primary" value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://..." />
-                            </div>
-                        )}
-                    </div>
+                    {/* Removed Advanced raw URL entry by default to keep it professional */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
                         <input ref={roomRef} className="input-primary" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="e.g., 510" />
@@ -131,7 +123,7 @@ const UserProfile = ({ userData, orders, focusField }) => {
                             {whatsappVerifiedAt ? (
                                 <span className="inline-flex items-center text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">Verified</span>
                             ) : (
-                                <span className="text-xs text-gray-500">Not verified</span>
+                                <span className="inline-flex items-center text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">Not verified</span>
                             )}
                             <p className="text-xs text-gray-500">We use this only for order updates.</p>
                         </div>
