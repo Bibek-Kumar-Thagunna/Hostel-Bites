@@ -43,6 +43,7 @@ const AdminDashboard = ({ userData }) => {
     const [categoryModal, setCategoryModal] = useState({ open: false, editing: null, name: '', icon: '', key: '' });
     const [adminNotifs, setAdminNotifs] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
+    const [usersSearch, setUsersSearch] = useState('');
 
     const ORDER_STATUS_OPTIONS = [
         'payment_pending',
@@ -766,33 +767,60 @@ const AdminDashboard = ({ userData }) => {
     const renderUsers = () => (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Users</h2>
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
-                <table className="w-full">
-                    <thead>
-                        <tr className="border-b border-gray-200 text-left text-sm text-gray-600">
-                            <th className="py-3 px-4">Name</th>
-                            <th className="py-3 px-4">Email</th>
-                            <th className="py-3 px-4">Room</th>
-                            <th className="py-3 px-4">WhatsApp</th>
-                            <th className="py-3 px-4">Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {allUsers.map((u) => (
-                            <tr key={u.id} className="border-b border-gray-100">
-                                <td className="py-3 px-4 text-gray-900 font-medium">{u.displayName || '—'}</td>
-                                <td className="py-3 px-4 text-gray-700">{u.email || '—'}</td>
-                                <td className="py-3 px-4 text-gray-700">{u.roomNumber || '—'}</td>
-                                <td className="py-3 px-4 text-gray-700">
-                                    {u.whatsapp ? (
-                                        <a className="text-primary-600 hover:text-primary-700" href={`https://wa.me/91${String(u.whatsapp).replace(/\D/g,'')}`} target="_blank" rel="noreferrer">{u.whatsapp}</a>
-                                    ) : '—'}
-                                </td>
-                                <td className="py-3 px-4 text-gray-700">{u.isAdmin ? 'Admin' : 'User'}</td>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="mb-4">
+                    <input
+                        value={usersSearch}
+                        onChange={(e) => setUsersSearch(e.target.value)}
+                        placeholder="Search by name, email, room or WhatsApp..."
+                        className="input-primary w-full md:w-96"
+                    />
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-200 text-left text-sm text-gray-600">
+                                <th className="py-3 px-4">Name</th>
+                                <th className="py-3 px-4">Email</th>
+                                <th className="py-3 px-4">Room</th>
+                                <th className="py-3 px-4">WhatsApp</th>
+                                <th className="py-3 px-4">WA Verified</th>
+                                <th className="py-3 px-4">Role</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {allUsers.filter((u) => {
+                                if (!usersSearch.trim()) return true;
+                                const q = usersSearch.toLowerCase();
+                                return (
+                                    (u.displayName || '').toLowerCase().includes(q) ||
+                                    (u.email || '').toLowerCase().includes(q) ||
+                                    String(u.roomNumber || '').toLowerCase().includes(q) ||
+                                    String(u.whatsapp || '').toLowerCase().includes(q)
+                                );
+                            }).map((u) => (
+                                <tr key={u.id} className="border-b border-gray-100">
+                                    <td className="py-3 px-4 text-gray-900 font-medium">{u.displayName || '—'}</td>
+                                    <td className="py-3 px-4 text-gray-700">{u.email || '—'}</td>
+                                    <td className="py-3 px-4 text-gray-700">{u.roomNumber || '—'}</td>
+                                    <td className="py-3 px-4 text-gray-700">
+                                        {u.whatsapp ? (
+                                            <a className="text-primary-600 hover:text-primary-700" href={`https://wa.me/91${String(u.whatsapp).replace(/\D/g,'')}`} target="_blank" rel="noreferrer">{u.whatsapp}</a>
+                                        ) : '—'}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                        {u.whatsappVerifiedAt ? (
+                                            <span title={u.whatsappVerifiedAt?.toDate ? u.whatsappVerifiedAt.toDate().toLocaleString() : ''} className="inline-flex items-center text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">Verified</span>
+                                        ) : (
+                                            <span className="inline-flex items-center text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">Not verified</span>
+                                        )}
+                                    </td>
+                                    <td className="py-3 px-4 text-gray-700">{u.isAdmin ? 'Admin' : 'User'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
