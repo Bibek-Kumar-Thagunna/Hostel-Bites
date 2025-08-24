@@ -1,13 +1,19 @@
 // Modern notification center with real-time updates
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Bell, X, CheckCircle, AlertCircle, Info, Clock, Package, Star, Truck, MessageCircle, ChefHat } from 'lucide-react';
+import { Bell, X, CheckCircle, AlertCircle, Info, Clock, Package, Star, Truck, MessageCircle, ChefHat, Check, X as XIcon } from 'lucide-react';
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../services/notifications';
+import { subscribeAdminNotifications, markAdminNotificationHandled } from '../../services/adminNotifications';
+import { updateOrder } from '../../services/admin';
+import { auth } from '../../services/firebase';
 
 const NotificationCenter = ({ userData }) => {
+    const isAdmin = Boolean(userData?.isAdmin);
     const [notifications, setNotifications] = useState([]);
+    const [adminNotifs, setAdminNotifs] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const prevAdminUnhandledRef = useRef(0);
 
     // Prevent background scroll when the mobile sheet is open
     useEffect(() => {
@@ -19,7 +25,25 @@ const NotificationCenter = ({ userData }) => {
     }, [isOpen]);
 
     useEffect(() => {
-        if (userData?.uid) {
+        if (!userData?.uid) {
+            setNotifications([]);
+            setAdminNotifs([]);
+            setUnreadCount(0);
+            return;
+        }
+        if (isAdmin) {
+            const unsub = subscribeAdminNotifications((list) => {
+                setAdminNotifs(list);
+                setUnreadCount(list.filter(n => !n.handled).length);
+                // Auto-open when a new unhandled admin notification arrives
+                const currentUnhandled = list.filter(n => !n.handled && n.type === 'order_placed').length;
+                if (prevAdminUnhandledRef.current !== 0 && currentUnhandled > prevAdminUnhandledRef.current) {
+                    setIsOpen(true);
+                }
+                prevAdminUnhandledRef.current = currentUnhandled;
+            });
+            return () => unsub();
+        } else {
             const unsubscribe = getUserNotifications(userData.uid, (notificationsData) => {
                 const transformedNotifications = notificationsData.map(notification => ({
                     ...notification,
@@ -31,9 +55,7 @@ const NotificationCenter = ({ userData }) => {
             });
             return () => unsubscribe();
         }
-        setNotifications([]);
-        setUnreadCount(0);
-    }, [userData?.uid]);
+    }, [userData?.uid, isAdmin]);
 
     const getIconComponent = (iconName) => {
         const iconMap = {
@@ -137,29 +159,48 @@ const NotificationCenter = ({ userData }) => {
                             </div>
                         </div>
                         <div className="max-h-80 overflow-y-auto">
-                            {notifications.length === 0 ? (
+                            {(isAdmin && adminNotifs.filter(n => !n.handled).length === 0) || (!isAdmin && notifications.length === 0) ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Bell className="w-12 h-12 text-gray-300 mb-4" />
                                     <p className="text-gray-500 font-medium">No notifications yet</p>
                                     <p className="text-sm text-gray-400 mt-1">We'll notify you when something arrives</p>
                                 </div>
                             ) : (
-                                notifications.map((notification) => (
+                                (isAdmin ? adminNotifs.filter(n => !n.handled) : notifications).map((notification) => (
                                     <div key={notification.id} className={`relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}>
                                         <div className="flex items-start space-x-3">
-                                            {getNotificationIcon(notification)}
+                                            {isAdmin ? (
+                                                <div className={`w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center`}>
+                                                    <Package className={`w-5 h-5 text-orange-600`} />
+                                                </div>
+                                            ) : (
+                                                getNotificationIcon(notification)
+                                            )}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between">
-                                                    <h4 className={`font-semibold text-sm text-gray-900`}>{notification.title}</h4>
-                                                    {!notification.read && (<div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />)}
+                                                    <h4 className={`font-semibold text-sm text-gray-900`}>{isAdmin ? `Order #${String(notification.orderId).slice(-8)}` : notification.title}</h4>
+                                                    {!isAdmin && !notification.read && (<div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />)}
                                                 </div>
-                                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
+                                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{isAdmin ? `${notification.userName || 'Unknown'} • ₹${notification.total || 0} • ${notification.itemsCount || 0} items` : notification.message}</p>
                                                 <div className="flex items-center justify-between mt-2">
-                                                    <span className="text-xs text-gray-500">{formatTime(notification.timestamp)}</span>
-                                                    <div className="flex items-center space-x-1">
-                                                        {!notification.read && (<button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Mark read</button>)}
-                                                        <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors"><X className="w-3 h-3 text-gray-400" /></button>
-                                                    </div>
+                                                    <span className="text-xs text-gray-500">{formatTime(notification.createdAt || notification.timestamp)}</span>
+                                                    {isAdmin ? (
+                                                        <div className="flex items-center space-x-1">
+                                                            <button onClick={async () => {
+                                                                const res = await updateOrder(notification.orderId, { status: 'preparing' });
+                                                                if (res?.success) await markAdminNotificationHandled(notification.id, 'accepted', auth.currentUser?.uid);
+                                                            }} className="px-2 py-1 rounded bg-green-600 text-white text-xs flex items-center gap-1"><Check className="w-3 h-3" />Accept</button>
+                                                            <button onClick={async () => {
+                                                                const res = await updateOrder(notification.orderId, { status: 'cancelled' });
+                                                                if (res?.success) await markAdminNotificationHandled(notification.id, 'declined', auth.currentUser?.uid);
+                                                            }} className="px-2 py-1 rounded bg-red-600 text-white text-xs flex items-center gap-1"><XIcon className="w-3 h-3" />Decline</button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center space-x-1">
+                                                            {!notification.read && (<button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Mark read</button>)}
+                                                            <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors"><X className="w-3 h-3 text-gray-400" /></button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
