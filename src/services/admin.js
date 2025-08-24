@@ -8,7 +8,8 @@ import {
     updateDoc,
     addDoc,
     deleteDoc,
-    Timestamp
+    Timestamp,
+    where
 } from './firebase';
 
 // Get admin analytics data
@@ -194,4 +195,20 @@ export const deleteOrder = async (orderId) => {
         console.error('Error deleting order:', error);
         return { success: false, error: error.message };
     }
+};
+
+// Subscribe to orders by a specific user
+export const subscribeOrdersByUser = (userId, callback) => {
+    if (!userId) return () => {};
+    const q = query(collection(db, 'orders'), where('userId', '==', userId));
+    return onSnapshot(q, (snapshot) => {
+        const orders = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => {
+                const aTime = a.createdAt?.toDate?.() || new Date(0);
+                const bTime = b.createdAt?.toDate?.() || new Date(0);
+                return bTime - aTime;
+            });
+        callback(orders);
+    });
 };
