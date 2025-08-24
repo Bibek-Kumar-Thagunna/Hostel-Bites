@@ -86,7 +86,7 @@ const LandingPage = () => {
         {
             "name": "Rohit Singh",
             "room": "Room 305",
-            "message": "Super fast delivery! Got my pizza in under 10 minutes.",
+            "message": "Super fast delivery! Got my order in under 15 minutes.",
             "rating": 5,
             "avatar": "https://images.unsplash.com/photo-1551028719-00167b16eac5?crop=faces&fit=crop&w=100&h=100"
         },

@@ -1,6 +1,6 @@
 // Modern header component with search and navigation
 import React, { useState } from 'react';
-import { Search, Menu, User, ShoppingCart } from 'lucide-react';
+import { Menu, User, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -12,11 +12,10 @@ const Header = ({ userData, onMenuClick }) => {
     React.useEffect(() => {
         setImageError(false);
     }, [userData?.photoURL]);
-    const [searchQuery, setSearchQuery] = useState('');
     const { cartCount } = useCart();
     const navigate = useNavigate();
     const location = useLocation();
-    const isAdminRoute = location.pathname.startsWith('/admin');
+    void location; // location retained in case of future route-based tweaks
 
     return (
         <header className={"fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-white/95 backdrop-blur-lg border-b border-gray-200"}>
@@ -42,21 +41,7 @@ const Header = ({ userData, onMenuClick }) => {
                         </div>
                     </div>
 
-                    {/* Center Section - Search (hidden on admin routes) */}
-                    {!isAdminRoute && (
-                        <div className="flex-1 max-w-md mx-4">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <input
-                                    type="text"
-                                    placeholder="Search for food..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                                />
-                            </div>
-                        </div>
-                    )}
+                    {/* Center Section - Removed search bar */}
 
                     {/* Right Section */}
                     <div className="flex items-center space-x-4">
