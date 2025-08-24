@@ -4,11 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { CartProvider } from '../../contexts/CartContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Layout = ({ children, userData }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+    const viewIsProfile = location.pathname.startsWith('/app') && new URLSearchParams(location.search).get('section') === 'profile';
 
     return (
         <CartProvider>
@@ -68,7 +70,7 @@ const Layout = ({ children, userData }) => {
                 </motion.main>
 
                 {/* Floating Action Button for Cart (Mobile) - only for non-admin users */}
-                {!userData?.isAdmin && (
+                {!userData?.isAdmin && viewIsProfile !== true && (
                     <motion.div
                         className="lg:hidden fixed bottom-6 right-6 z-40"
                         whileHover={{ scale: 1.05 }}

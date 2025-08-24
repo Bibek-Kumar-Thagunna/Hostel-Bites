@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db, doc, setDoc, updateProfile } from '../../services/firebase';
+import { auth, db, doc, setDoc, updateProfile, Timestamp } from '../../services/firebase';
 
 const UserProfile = ({ userData, orders, focusField }) => {
     const [name, setName] = useState(userData?.displayName || '');
@@ -10,10 +10,23 @@ const UserProfile = ({ userData, orders, focusField }) => {
     const [imageError, setImageError] = useState(false);
     const totalSpent = orders.reduce((total, order) => total + (order.total || 0), 0);
     const roomRef = React.useRef(null);
+    const [whatsappVerifiedAt, setWhatsappVerifiedAt] = useState(userData?.whatsappVerifiedAt || null);
+    const [verifyMsg, setVerifyMsg] = useState('');
+    const [verifyOk, setVerifyOk] = useState(null);
+    const [verifying, setVerifying] = useState(false);
+
+    // Photo uploader modal
+    const [photoModal, setPhotoModal] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState('');
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     useEffect(() => {
         setName(userData?.displayName || '');
         setPhoto(userData?.photoURL || '');
+        setRoomNumber(userData?.roomNumber || '');
+        setWhatsapp(userData?.whatsapp || '');
+        setWhatsappVerifiedAt(userData?.whatsappVerifiedAt || null);
     }, [userData?.displayName, userData?.photoURL]);
 
     useEffect(() => { setImageError(false); }, [photo]);
@@ -25,7 +38,12 @@ const UserProfile = ({ userData, orders, focusField }) => {
                 await updateProfile(auth.currentUser, { displayName: name, photoURL: photo });
             }
             if (userData?.uid) {
-                await setDoc(doc(db, 'users', userData.uid), { displayName: name, photoURL: photo, roomNumber, whatsapp }, { merge: true });
+                const patch = { displayName: name, photoURL: photo, roomNumber, whatsapp };
+                if (whatsappVerifiedAt) {
+                    // store as timestamp if possible
+                    patch.whatsappVerifiedAt = whatsappVerifiedAt?.seconds ? whatsappVerifiedAt : Timestamp.now();
+                }
+                await setDoc(doc(db, 'users', userData.uid), patch, { merge: true });
             }
         } finally {
             setSaving(false);
@@ -56,6 +74,8 @@ const UserProfile = ({ userData, orders, focusField }) => {
                         <h3 className="text-xl font-semibold">{name || userData?.displayName || 'User'}</h3>
                         <p className="text-gray-600">{userData?.email}</p>
                     </div>
+                    <div className="flex-1" />
+                    <button onClick={() => setPhotoModal(true)} className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -64,8 +84,13 @@ const UserProfile = ({ userData, orders, focusField }) => {
                         <input className="input-primary" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL</label>
-                        <input className="input-primary" value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://..." />
+                        <button className="text-sm text-gray-600 underline" onClick={() => setShowAdvanced(v => !v)}>{showAdvanced ? 'Hide' : 'Show'} Advanced</button>
+                        {showAdvanced && (
+                            <div className="mt-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL</label>
+                                <input className="input-primary" value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://..." />
+                            </div>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
@@ -76,17 +101,43 @@ const UserProfile = ({ userData, orders, focusField }) => {
                         <div className="flex gap-2">
                             <input className="input-primary flex-1" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="10-digit number" />
                             <button
+                                disabled={verifying}
                                 onClick={async () => {
-                                    const resp = await fetch('/api/verify-whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumber: whatsapp }) });
-                                    const data = await resp.json();
-                                    if (data?.normalized) setWhatsapp(data.normalized);
-                                    alert(data?.message || (data?.success ? 'Verified' : 'Verification failed'));
+                                    setVerifying(true);
+                                    setVerifyMsg('');
+                                    setVerifyOk(null);
+                                    try {
+                                        const resp = await fetch('/api/verify-whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumber: whatsapp }) });
+                                        const data = await resp.json();
+                                        if (data?.normalized) setWhatsapp(data.normalized);
+                                        if (data?.success) {
+                                            setWhatsappVerifiedAt(Timestamp.now());
+                                            setVerifyOk(true);
+                                        } else {
+                                            setVerifyOk(false);
+                                        }
+                                        setVerifyMsg(data?.message || (data?.success ? 'Verified' : 'Verification failed'));
+                                    } catch (_e) {
+                                        setVerifyOk(false);
+                                        setVerifyMsg('Verification error. Please try again.');
+                                    } finally {
+                                        setVerifying(false);
+                                    }
                                 }}
-                                className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50"
-                            >Background Verify</button>
-                            <a href={whatsapp ? `https://wa.me/91${String(whatsapp).replace(/\D/g,'')}` : undefined} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Open WA</a>
+                                className={`px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50 ${verifying ? 'opacity-60 cursor-not-allowed' : ''}`}
+                            >{verifying ? 'Verifying…' : 'Verify number'}</button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Background verify simulates a check; Open WA lets you send a test message.</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            {whatsappVerifiedAt ? (
+                                <span className="inline-flex items-center text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">Verified</span>
+                            ) : (
+                                <span className="text-xs text-gray-500">Not verified</span>
+                            )}
+                            <p className="text-xs text-gray-500">We use this only for order updates.</p>
+                        </div>
+                        {verifyMsg && (
+                            <p className={`text-xs mt-1 ${verifyOk ? 'text-green-700' : 'text-red-600'}`}>{verifyMsg}</p>
+                        )}
                     </div>
                 </div>
 
@@ -105,6 +156,80 @@ const UserProfile = ({ userData, orders, focusField }) => {
                     <button disabled={saving} onClick={saveProfile} className="btn-primary">{saving ? 'Saving...' : 'Save Profile'}</button>
                 </div>
             </div>
+
+            {/* Photo Uploader Modal */}
+            {photoModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/30" onClick={() => setPhotoModal(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-lg mx-4 p-6">
+                        <div className="flex items-start justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Update Photo</h3>
+                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setPhotoModal(false)}>×</button>
+                        </div>
+                        <div className="space-y-3">
+                            <input type="file" accept="image/*" onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = () => setPhotoPreview(reader.result);
+                                reader.readAsDataURL(file);
+                            }} />
+                            {photoPreview && (
+                                <div className="text-center">
+                                    <img src={photoPreview} alt="Preview" className="w-32 h-32 object-cover rounded-full mx-auto border" />
+                                </div>
+                            )}
+                            <p className="text-xs text-gray-500">We will compress to 512×512 for faster loading. If upload is not configured, we will store the image inline.</p>
+                        </div>
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button className="px-4 py-2 rounded-xl border" onClick={() => setPhotoModal(false)}>Cancel</button>
+                            <button disabled={uploadingPhoto} className="px-4 py-2 rounded-xl bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-60" onClick={async () => {
+                                if (!photoPreview) { setPhotoModal(false); return; }
+                                setUploadingPhoto(true);
+                                try {
+                                    // Compress to 512x512 square
+                                    const img = new Image();
+                                    img.src = photoPreview;
+                                    await new Promise(r => { img.onload = r; });
+                                    const canvas = document.createElement('canvas');
+                                    const size = 512;
+                                    canvas.width = size;
+                                    canvas.height = size;
+                                    const ctx = canvas.getContext('2d');
+                                    // cover algorithm
+                                    const ratio = Math.max(size / img.width, size / img.height);
+                                    const nw = img.width * ratio;
+                                    const nh = img.height * ratio;
+                                    const nx = (size - nw) / 2;
+                                    const ny = (size - nh) / 2;
+                                    ctx.drawImage(img, nx, ny, nw, nh);
+                                    const dataUrl = canvas.toDataURL('image/webp', 0.9);
+                                    const uploadUrl = import.meta.env.VITE_CLOUDINARY_UPLOAD_URL;
+                                    const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+                                    if (uploadUrl && preset) {
+                                        const blob = await (await fetch(dataUrl)).blob();
+                                        const form = new FormData();
+                                        form.append('file', blob, 'profile.webp');
+                                        form.append('upload_preset', preset);
+                                        const resp = await fetch(uploadUrl, { method: 'POST', body: form });
+                                        const json = await resp.json();
+                                        if (json?.secure_url) {
+                                            setPhoto(json.secure_url);
+                                        } else {
+                                            setPhoto(dataUrl);
+                                        }
+                                    } else {
+                                        setPhoto(dataUrl);
+                                    }
+                                    setPhotoModal(false);
+                                } finally {
+                                    setUploadingPhoto(false);
+                                }
+                            }}>{uploadingPhoto ? 'Uploading...' : 'Save Photo'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
