@@ -169,10 +169,10 @@ const Sidebar = ({ userData, onClose }) => {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-100">
+            <div className="p-4 border-t border-gray-100 md:pt-2">
                 <motion.button
                     onClick={handleSignOut}
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                    className="w-full flex items-center space-x-3 px-4 py-3 md:py-2 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
                     whileHover={{ x: 4 }}
                     whileTap={{ scale: 0.98 }}
                 >

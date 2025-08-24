@@ -73,7 +73,7 @@ const UserProfile = ({ userData, orders, focusField }) => {
     }, [focusField]);
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-md md:max-w-2xl lg:max-w-3xl mx-auto">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-4xl xl:max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
             </div>
