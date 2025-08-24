@@ -14,6 +14,9 @@ const UserProfile = ({ userData, orders, focusField }) => {
     const [verifyMsg, setVerifyMsg] = useState('');
     const [verifyOk, setVerifyOk] = useState(null);
     const [verifying, setVerifying] = useState(false);
+    const [saveNotice, setSaveNotice] = useState('');
+    const whatsappRef = React.useRef(null);
+    const didAutoFocusWhatsapp = React.useRef(false);
 
     // Photo uploader modal
     const [photoModal, setPhotoModal] = useState(false);
@@ -31,6 +34,17 @@ const UserProfile = ({ userData, orders, focusField }) => {
 
     useEffect(() => { setImageError(false); }, [photo]);
 
+    // Auto-focus WhatsApp on load if invalid and room is not the requested focus
+    useEffect(() => {
+        if (!didAutoFocusWhatsapp.current && focusField !== 'room') {
+            const invalid = !(whatsapp && whatsapp.length === 10);
+            if (invalid && whatsappRef.current) {
+                whatsappRef.current.focus();
+                didAutoFocusWhatsapp.current = true;
+            }
+        }
+    }, [focusField, whatsapp]);
+
     const saveProfile = async () => {
         setSaving(true);
         try {
@@ -45,6 +59,8 @@ const UserProfile = ({ userData, orders, focusField }) => {
                 }
                 await setDoc(doc(db, 'users', userData.uid), patch, { merge: true });
             }
+            setSaveNotice('Profile saved');
+            setTimeout(() => setSaveNotice(''), 2000);
         } finally {
             setSaving(false);
         }
@@ -57,12 +73,12 @@ const UserProfile = ({ userData, orders, focusField }) => {
     }, [focusField]);
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-md mx-auto">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
             </div>
             <div className="space-y-6">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-4">
                     {photo && !imageError ? (
                         <img src={photo} alt="Profile" className="w-16 h-16 rounded-full object-cover" onError={() => setImageError(true)} />
                     ) : (
@@ -70,13 +86,15 @@ const UserProfile = ({ userData, orders, focusField }) => {
                             <span className="text-white text-xl font-bold">{name?.charAt(0) || userData?.displayName?.charAt(0) || 'U'}</span>
                         </div>
                     )}
-                    <div>
-                        <h3 className="text-xl font-semibold">{name || userData?.displayName || 'User'}</h3>
-                        <p className="text-gray-600">{userData?.email}</p>
+                    <div className="min-w-0">
+                        <h3 className="text-xl font-semibold truncate">{name || userData?.displayName || 'User'}</h3>
+                        <p className="text-gray-600 truncate max-w-[200px] sm:max-w-none">{userData?.email}</p>
                     </div>
-                    <div className="flex-1" />
-                    <button onClick={() => setPhotoModal(true)} className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
+                    <div className="flex-1 hidden md:block" />
+                    <button onClick={() => setPhotoModal(true)} className="hidden md:inline-flex px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
                 </div>
+                {/* Mobile change photo button */}
+                <button onClick={() => setPhotoModal(true)} className="md:hidden w-full px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -90,10 +108,21 @@ const UserProfile = ({ userData, orders, focusField }) => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-                        <div className="flex gap-2">
-                            <input className="input-primary flex-1" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="10-digit number" />
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex flex-1">
+                                <span className={`inline-flex items-center px-3 rounded-l-xl border border-r-0 text-sm ${whatsapp && whatsapp.length !== 10 ? 'border-red-300 bg-red-50 text-red-600' : 'bg-gray-50 text-gray-600'}`}>+91</span>
+                                <input
+                                    ref={whatsappRef}
+                                    className={`input-primary flex-1 rounded-l-none ${whatsapp && whatsapp.length !== 10 ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : ''}`}
+                                    inputMode="numeric"
+                                    maxLength={10}
+                                    value={whatsapp}
+                                    onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                    placeholder="9876543210"
+                                />
+                            </div>
                             <button
-                                disabled={verifying}
+                                disabled={verifying || whatsapp.length !== 10}
                                 onClick={async () => {
                                     setVerifying(true);
                                     setVerifyMsg('');
@@ -116,16 +145,15 @@ const UserProfile = ({ userData, orders, focusField }) => {
                                         setVerifying(false);
                                     }
                                 }}
-                                className={`px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50 ${verifying ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            >{verifying ? 'Verifying…' : 'Verify number'}</button>
+                                className={`px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50 ${(verifying || whatsapp.length !== 10) ? 'opacity-60 cursor-not-allowed' : ''} sm:w-auto w-full`}
+                            >{verifying ? 'Verifying…' : 'Verify'}</button>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                             {whatsappVerifiedAt ? (
                                 <span className="inline-flex items-center text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">Verified</span>
                             ) : (
-                                <span className="inline-flex items-center text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">Not verified</span>
+                                <span className="inline-flex items-center whitespace-nowrap text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">Not verified</span>
                             )}
-                            <p className="text-xs text-gray-500">We use this only for order updates.</p>
                         </div>
                         {verifyMsg && (
                             <p className={`text-xs mt-1 ${verifyOk ? 'text-green-700' : 'text-red-600'}`}>{verifyMsg}</p>
@@ -133,7 +161,7 @@ const UserProfile = ({ userData, orders, focusField }) => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-gray-50 rounded-lg">
                         <h4 className="font-medium text-gray-900">Total Orders</h4>
                         <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
@@ -144,8 +172,8 @@ const UserProfile = ({ userData, orders, focusField }) => {
                     </div>
                 </div>
 
-                <div className="flex justify-end">
-                    <button disabled={saving} onClick={saveProfile} className="btn-primary">{saving ? 'Saving...' : 'Save Profile'}</button>
+                <div className="flex justify-end md:justify-end">
+                    <button disabled={saving} onClick={saveProfile} className="btn-primary w-full md:w-auto">{saving ? 'Saving...' : 'Save Profile'}</button>
                 </div>
             </div>
 
@@ -220,6 +248,11 @@ const UserProfile = ({ userData, orders, focusField }) => {
                             }}>{uploadingPhoto ? 'Uploading...' : 'Save Photo'}</button>
                         </div>
                     </div>
+                </div>
+            )}
+            {saveNotice && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow">
+                    {saveNotice}
                 </div>
             )}
         </div>
