@@ -174,8 +174,8 @@ const NotificationCenter = ({ userData }) => {
                     </div>
 
                     {/* Mobile centered modal */}
-                    <div className="sm:hidden fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-                        <div className="pointer-events-auto bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[80vh]">
+                    <div className="sm:hidden fixed inset-0 z-[60] flex items-center justify-center">
+                        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[80vh]">
                             <div className="flex items-center justify-between p-4 border-b border-gray-200">
                             <h3 className="font-bold text-gray-900">Notifications</h3>
                             <div className="flex items-center space-x-2">
