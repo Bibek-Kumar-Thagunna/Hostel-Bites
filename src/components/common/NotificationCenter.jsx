@@ -14,6 +14,7 @@ const NotificationCenter = ({ userData }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const prevAdminUnhandledRef = useRef(0);
+    const adminInitRef = useRef(false);
 
     // Prevent background scroll when the mobile sheet is open
     useEffect(() => {
@@ -37,10 +38,11 @@ const NotificationCenter = ({ userData }) => {
                 setUnreadCount(list.filter(n => !n.handled).length);
                 // Auto-open when a new unhandled admin notification arrives
                 const currentUnhandled = list.filter(n => !n.handled && n.type === 'order_placed').length;
-                if (prevAdminUnhandledRef.current !== 0 && currentUnhandled > prevAdminUnhandledRef.current) {
+                if (adminInitRef.current && currentUnhandled > prevAdminUnhandledRef.current) {
                     setIsOpen(true);
                 }
                 prevAdminUnhandledRef.current = currentUnhandled;
+                if (!adminInitRef.current) adminInitRef.current = true;
             });
             return () => unsub();
         } else {
