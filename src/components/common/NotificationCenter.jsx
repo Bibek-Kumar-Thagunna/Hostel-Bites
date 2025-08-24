@@ -222,53 +222,72 @@ const NotificationCenter = ({ userData }) => {
                         <div className="sm:hidden fixed inset-0 z-[100] flex items-center justify-center">
                             <div className="absolute inset-0 bg-black/40" onClick={() => setIsOpen(false)} />
                             <div className="relative z-[101] bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-h-[80vh]">
-                            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                            <h3 className="font-bold text-gray-900">Notifications</h3>
-                            <div className="flex items-center space-x-2">
-                                {unreadCount > 0 && (
-                                    <button onClick={markAllAsRead} className="text-sm text-primary-600 hover:text-primary-700 font-medium">Mark all read</button>
-                                )}
-                                <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                            </div>
-                            <div className="max-h-[68vh] overflow-y-auto overscroll-contain">
-                            {notifications.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <Bell className="w-12 h-12 text-gray-300 mb-4" />
-                                    <p className="text-gray-500 font-medium">No notifications yet</p>
-                                    <p className="text-sm text-gray-400 mt-1">We'll notify you when something arrives</p>
+                                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                                    <h3 className="font-bold text-gray-900">Notifications</h3>
+                                    <div className="flex items-center space-x-2">
+                                        {!isAdmin && unreadCount > 0 && (
+                                            <button onClick={markAllAsRead} className="text-sm text-primary-600 hover:text-primary-700 font-medium">Mark all read</button>
+                                        )}
+                                        <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            ) : (
-                                notifications.map((notification) => (
-                                    <div key={notification.id} className={`relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}>
-                                        <div className="flex items-start space-x-3">
-                                            {getNotificationIcon(notification)}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between">
-                                                    <h4 className={`font-semibold text-sm text-gray-900`}>{notification.title}</h4>
-                                                    {!notification.read && (<div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />)}
-                                                </div>
-                                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
-                                                <div className="flex items-center justify-between mt-2">
-                                                    <span className="text-xs text-gray-500">{formatTime(notification.timestamp)}</span>
-                                                    <div className="flex items-center space-x-1">
-                                                        {!notification.read && (<button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Mark read</button>)}
-                                                        <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors"><X className="w-3 h-3 text-gray-400" /></button>
+                                <div className="max-h-[68vh] overflow-y-auto overscroll-contain">
+                                    {(isAdmin ? adminNotifs.filter(n => !n.handled).length === 0 : notifications.length === 0) ? (
+                                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                                            <Bell className="w-12 h-12 text-gray-300 mb-4" />
+                                            <p className="text-gray-500 font-medium">No notifications yet</p>
+                                            <p className="text-sm text-gray-400 mt-1">We'll notify you when something arrives</p>
+                                        </div>
+                                    ) : (
+                                        (isAdmin ? adminNotifs.filter(n => !n.handled) : notifications).map((notification) => (
+                                            <div key={notification.id} className={`relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!isAdmin && !notification.read ? 'bg-blue-50/50' : ''}`}>
+                                                <div className="flex items-start space-x-3">
+                                                    {isAdmin ? (
+                                                        <div className={`w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center`}>
+                                                            <Package className={`w-5 h-5 text-orange-600`} />
+                                                        </div>
+                                                    ) : (
+                                                        getNotificationIcon(notification)
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between">
+                                                            <h4 className={`font-semibold text-sm text-gray-900`}>{isAdmin ? `Order #${String(notification.orderId).slice(-8)}` : notification.title}</h4>
+                                                            {!isAdmin && !notification.read && (<div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />)}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{isAdmin ? `${notification.userName || 'Unknown'} • ₹${notification.total || 0} • ${notification.itemsCount || 0} items` : notification.message}</p>
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            <span className="text-xs text-gray-500">{formatTime(notification.createdAt || notification.timestamp)}</span>
+                                                            {isAdmin ? (
+                                                                <div className="flex items-center space-x-1">
+                                                                    <button onClick={async () => {
+                                                                        const res = await updateOrder(notification.orderId, { status: 'preparing' });
+                                                                        if (res?.success) await markAdminNotificationHandled(notification.id, 'accepted', auth.currentUser?.uid);
+                                                                    }} className="px-2 py-1 rounded bg-green-600 text-white text-xs flex items-center gap-1"><Check className="w-3 h-3" />Accept</button>
+                                                                    <button onClick={async () => {
+                                                                        const res = await updateOrder(notification.orderId, { status: 'cancelled' });
+                                                                        if (res?.success) await markAdminNotificationHandled(notification.id, 'declined', auth.currentUser?.uid);
+                                                                    }} className="px-2 py-1 rounded bg-red-600 text-white text-xs flex items-center gap-1"><XIcon className="w-3 h-3" />Decline</button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center space-x-1">
+                                                                    {!notification.read && (<button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Mark read</button>)}
+                                                                    <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors"><X className="w-3 h-3 text-gray-400" /></button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                            </div>
-                            {notifications.length > 0 && (
-                                <div className="p-4 border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
-                                    <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
+                                        ))
+                                    )}
                                 </div>
-                            )}
+                                {!isAdmin && notifications.length > 0 && (
+                                    <div className="p-4 border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
+                                        <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
+                                    </div>
+                                )}
                             </div>
                         </div>, document.body)}
                 </>
