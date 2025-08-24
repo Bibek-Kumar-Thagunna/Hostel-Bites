@@ -110,8 +110,9 @@ const NotificationCenter = ({ userData }) => {
 
             {isOpen && (
                 <>
+                    {/* Mobile full-screen sheet */}
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className={`absolute right-0 mt-2 w-96 max-h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden`}>
+                    <div className={`absolute right-0 mt-2 w-96 max-h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden sm:w-96 sm:rounded-2xl sm:max-h-96 w-[90vw] max-h-[70vh] md:w-96 md:max-h-96`}>
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
                             <h3 className="font-bold text-gray-900">Notifications</h3>
                             <div className="flex items-center space-x-2">
@@ -125,7 +126,7 @@ const NotificationCenter = ({ userData }) => {
                                 </button>
                             </div>
                         </div>
-                        <div className="max-h-80 overflow-y-auto">
+                        <div className="max-h-80 overflow-y-auto sm:max-h-80 max-h-[55vh]">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Bell className="w-12 h-12 text-gray-300 mb-4" />
