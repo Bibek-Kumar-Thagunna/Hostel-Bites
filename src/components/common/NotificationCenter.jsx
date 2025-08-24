@@ -110,23 +110,23 @@ const NotificationCenter = ({ userData }) => {
 
             {isOpen && (
                 <>
-                    {/* Mobile full-screen sheet */}
+                    {/* Overlay */}
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className={`absolute right-0 mt-2 w-96 max-h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden sm:w-96 sm:rounded-2xl sm:max-h-96 w-[90vw] max-h-[70vh] md:w-96 md:max-h-96`}>
+
+                    {/* Desktop dropdown */}
+                    <div className="hidden sm:block absolute right-0 mt-2 w-96 max-h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
                             <h3 className="font-bold text-gray-900">Notifications</h3>
                             <div className="flex items-center space-x-2">
                                 {unreadCount > 0 && (
-                                    <button onClick={markAllAsRead} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                                        Mark all read
-                                    </button>
+                                    <button onClick={markAllAsRead} className="text-sm text-primary-600 hover:text-primary-700 font-medium">Mark all read</button>
                                 )}
                                 <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
-                        <div className="max-h-80 overflow-y-auto sm:max-h-80 max-h-[55vh]">
+                        <div className="max-h-80 overflow-y-auto">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Bell className="w-12 h-12 text-gray-300 mb-4" />
@@ -135,33 +135,20 @@ const NotificationCenter = ({ userData }) => {
                                 </div>
                             ) : (
                                 notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className={`relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}
-                                    >
+                                    <div key={notification.id} className={`relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}>
                                         <div className="flex items-start space-x-3">
                                             {getNotificationIcon(notification)}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between">
-                                                    <h4 className={`font-semibold text-sm text-gray-900`}>
-                                                        {notification.title}
-                                                    </h4>
-                                                    {!notification.read && (
-                                                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
-                                                    )}
+                                                    <h4 className={`font-semibold text-sm text-gray-900`}>{notification.title}</h4>
+                                                    {!notification.read && (<div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />)}
                                                 </div>
                                                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
                                                 <div className="flex items-center justify-between mt-2">
                                                     <span className="text-xs text-gray-500">{formatTime(notification.timestamp)}</span>
                                                     <div className="flex items-center space-x-1">
-                                                        {!notification.read && (
-                                                            <button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
-                                                                Mark read
-                                                            </button>
-                                                        )}
-                                                        <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors">
-                                                            <X className="w-3 h-3 text-gray-400" />
-                                                        </button>
+                                                        {!notification.read && (<button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Mark read</button>)}
+                                                        <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors"><X className="w-3 h-3 text-gray-400" /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -172,9 +159,58 @@ const NotificationCenter = ({ userData }) => {
                         </div>
                         {notifications.length > 0 && (
                             <div className="p-4 border-t border-gray-200">
-                                <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">
-                                    View all notifications
+                                <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile bottom sheet */}
+                    <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 max-h-[75vh]">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                            <h3 className="font-bold text-gray-900">Notifications</h3>
+                            <div className="flex items-center space-x-2">
+                                {unreadCount > 0 && (
+                                    <button onClick={markAllAsRead} className="text-sm text-primary-600 hover:text-primary-700 font-medium">Mark all read</button>
+                                )}
+                                <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <X className="w-4 h-4" />
                                 </button>
+                            </div>
+                        </div>
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            {notifications.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center">
+                                    <Bell className="w-12 h-12 text-gray-300 mb-4" />
+                                    <p className="text-gray-500 font-medium">No notifications yet</p>
+                                    <p className="text-sm text-gray-400 mt-1">We'll notify you when something arrives</p>
+                                </div>
+                            ) : (
+                                notifications.map((notification) => (
+                                    <div key={notification.id} className={`relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}>
+                                        <div className="flex items-start space-x-3">
+                                            {getNotificationIcon(notification)}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between">
+                                                    <h4 className={`font-semibold text-sm text-gray-900`}>{notification.title}</h4>
+                                                    {!notification.read && (<div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />)}
+                                                </div>
+                                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
+                                                <div className="flex items-center justify-between mt-2">
+                                                    <span className="text-xs text-gray-500">{formatTime(notification.timestamp)}</span>
+                                                    <div className="flex items-center space-x-1">
+                                                        {!notification.read && (<button onClick={() => markAsRead(notification.id)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Mark read</button>)}
+                                                        <button onClick={() => deleteOne(notification.id)} className="p-1 rounded hover:bg-gray-200 transition-colors"><X className="w-3 h-3 text-gray-400" /></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        {notifications.length > 0 && (
+                            <div className="p-4 border-t border-gray-200">
+                                <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">View all notifications</button>
                             </div>
                         )}
                     </div>
