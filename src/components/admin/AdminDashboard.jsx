@@ -711,7 +711,7 @@ const AdminDashboard = ({ userData }) => {
                 </div>
                 <div className="space-y-3">
                     {orders
-                        .filter(o => (o.status || 'payment_pending') === 'payment_pending')
+                        .filter(o => ['payment_pending', 'pending'].includes(o.status || 'payment_pending'))
                         .map((order) => (
                             <div key={order.id} className="border border-gray-200 rounded-xl p-4 flex items-start justify-between">
                                 <div className="space-y-1">
