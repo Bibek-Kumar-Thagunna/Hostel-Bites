@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 const normalizeInitial = (iv) => ({
     name: iv?.name || '',
     description: iv?.description || '',
-    category: iv?.category || 'snacks',
+    category: iv?.category || '',
     sellingPrice: iv?.sellingPrice ?? iv?.price ?? 0,
     mrp: iv?.mrp ?? iv?.price ?? 0,
     quantity: iv?.quantity ?? iv?.stock ?? 0,
@@ -14,6 +14,27 @@ const normalizeInitial = (iv) => ({
 const MenuForm = ({ initialValues, onSave, onCancel, categories = [] }) => {
     const [form, setForm] = useState(normalizeInitial(initialValues));
     const [saving, setSaving] = useState(false);
+
+    const fallbackCategories = useMemo(() => ([
+        { key: 'snacks', name: 'Snacks', icon: '🍿' },
+        { key: 'meals', name: 'Meals', icon: '🍛' },
+        { key: 'beverages', name: 'Beverages', icon: '🥤' },
+        { key: 'sweets', name: 'Sweets', icon: '🍰' },
+        { key: 'breakfast', name: 'Breakfast', icon: '🥐' }
+    ]), []);
+
+    const options = categories && categories.length > 0 ? categories : fallbackCategories;
+
+    // If no category set yet, or previous category is not in options, default to first option
+    useEffect(() => {
+        if (!form.category || !options.some(c => (c.key || c.id) === form.category)) {
+            const first = options[0];
+            if (first && (first.key || first.id)) {
+                setForm((prev) => ({ ...prev, category: first.key || first.id }));
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options.length]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -27,7 +48,7 @@ const MenuForm = ({ initialValues, onSave, onCancel, categories = [] }) => {
             const payload = {
                 name: form.name.trim(),
                 description: form.description.trim(),
-                category: form.category,
+                category: String(form.category).trim(),
                 sellingPrice: Number(form.sellingPrice) || 0,
                 mrp: Number(form.mrp) || Number(form.sellingPrice) || 0,
                 quantity: Number(form.quantity) || 0,
@@ -53,13 +74,7 @@ const MenuForm = ({ initialValues, onSave, onCancel, categories = [] }) => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                     <select name="category" value={form.category} onChange={handleChange} className="input-primary">
-                        {(categories.length ? categories : [
-                            { key: 'snacks', name: 'Snacks', icon: '🍿' },
-                            { key: 'meals', name: 'Meals', icon: '🍛' },
-                            { key: 'beverages', name: 'Beverages', icon: '🥤' },
-                            { key: 'sweets', name: 'Sweets', icon: '🍰' },
-                            { key: 'breakfast', name: 'Breakfast', icon: '🥐' }
-                        ]).map((c) => (
+                        {options.map((c) => (
                             <option key={c.key || c.id} value={c.key || c.id}>{`${c.icon ? c.icon + ' ' : ''}${c.name}`}</option>
                         ))}
                     </select>
