@@ -93,9 +93,10 @@ const UserProfile = ({ userData, orders, focusField }) => {
                             <p className="text-gray-600 truncate max-w-[200px] md:max-w-[400px] lg:max-w-none">{userData?.email}</p>
                         </div>
                         <div className="flex-1 hidden md:block" />
-                        <button onClick={() => setPhotoModal(true)} className="hidden md:inline-flex px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
+                        {/* Desktop button moved below */}
                     </div>
                     <button onClick={() => setPhotoModal(true)} className="md:hidden w-full px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
+                    <button onClick={() => setPhotoModal(true)} className="hidden md:block w-full px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Change Photo</button>
 
                     {/* Stats removed as requested for user profile on all devices */}
                 </div>
