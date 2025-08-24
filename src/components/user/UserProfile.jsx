@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, doc, setDoc, updateProfile } from '../../services/firebase';
 
-const UserProfile = ({ userData, orders }) => {
+const UserProfile = ({ userData, orders, focusField }) => {
     const [name, setName] = useState(userData?.displayName || '');
     const [photo, setPhoto] = useState(userData?.photoURL || '');
+    const [roomNumber, setRoomNumber] = useState(userData?.roomNumber || '');
+    const [whatsapp, setWhatsapp] = useState(userData?.whatsapp || '');
     const [saving, setSaving] = useState(false);
     const [imageError, setImageError] = useState(false);
     const totalSpent = orders.reduce((total, order) => total + (order.total || 0), 0);
+    const roomRef = React.useRef(null);
 
     useEffect(() => {
         setName(userData?.displayName || '');
@@ -22,12 +25,18 @@ const UserProfile = ({ userData, orders }) => {
                 await updateProfile(auth.currentUser, { displayName: name, photoURL: photo });
             }
             if (userData?.uid) {
-                await setDoc(doc(db, 'users', userData.uid), { displayName: name, photoURL: photo }, { merge: true });
+                await setDoc(doc(db, 'users', userData.uid), { displayName: name, photoURL: photo, roomNumber, whatsapp }, { merge: true });
             }
         } finally {
             setSaving(false);
         }
     };
+
+    useEffect(() => {
+        if (focusField === 'room' && roomRef.current) {
+            roomRef.current.focus();
+        }
+    }, [focusField]);
 
     return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -57,6 +66,18 @@ const UserProfile = ({ userData, orders }) => {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL</label>
                         <input className="input-primary" value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://..." />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
+                        <input ref={roomRef} className="input-primary" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="e.g., 510" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                        <div className="flex gap-2">
+                            <input className="input-primary flex-1" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="10-digit number" />
+                            <a href={whatsapp ? `https://wa.me/91${String(whatsapp).replace(/\D/g,'')}` : undefined} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl border text-gray-700 hover:bg-gray-50">Verify</a>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Tap Verify to open WhatsApp and confirm the number works.</p>
                     </div>
                 </div>
 

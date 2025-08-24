@@ -150,7 +150,7 @@ const UserApp = ({ userData }) => {
             
             case 'profile':
                 return (
-                    <UserProfile userData={userData} orders={orders} />
+                    <UserProfile userData={userData} orders={orders} focusField={searchParams.get('focus')} />
                 );
             case 'help':
                 return (

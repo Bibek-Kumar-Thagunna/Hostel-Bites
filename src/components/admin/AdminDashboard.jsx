@@ -6,6 +6,7 @@ import { getAdminAnalytics, getRecentOrders, getMenuItems, updateMenuItem, addMe
 import { subscribeAppSettings, updateAppSettings } from '../../services/settings';
 import MenuForm from './MenuForm';
 import { subscribeCategories, addCategory, updateCategory, deleteCategory as deleteCategorySvc } from '../../services/categories';
+import { subscribeUsers } from '../../services/users';
 import { auth, db, doc, setDoc, updateProfile } from '../../services/firebase';
 import { subscribeAdminNotifications, markAdminNotificationHandled } from '../../services/adminNotifications';
 
@@ -41,6 +42,7 @@ const AdminDashboard = ({ userData }) => {
     const [categories, setCategories] = useState([]);
     const [categoryModal, setCategoryModal] = useState({ open: false, editing: null, name: '', icon: '', key: '' });
     const [adminNotifs, setAdminNotifs] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
 
     const ORDER_STATUS_OPTIONS = [
         'payment_pending',
@@ -118,6 +120,8 @@ const AdminDashboard = ({ userData }) => {
 
         // Load admin notifications
         const unsubscribeAdminNotifs = subscribeAdminNotifications((list) => setAdminNotifs(list));
+        // Load users for admin users tab
+        const unsubscribeUsers = subscribeUsers((u) => setAllUsers(u));
 
         return () => {
             unsubscribeAnalytics();
@@ -126,6 +130,7 @@ const AdminDashboard = ({ userData }) => {
             unsubscribeSettings();
             unsubscribeCategories();
             unsubscribeAdminNotifs();
+            unsubscribeUsers();
         };
     }, []);
 
@@ -758,6 +763,40 @@ const AdminDashboard = ({ userData }) => {
         </div>
     );
 
+    const renderUsers = () => (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Users</h2>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+                <table className="w-full">
+                    <thead>
+                        <tr className="border-b border-gray-200 text-left text-sm text-gray-600">
+                            <th className="py-3 px-4">Name</th>
+                            <th className="py-3 px-4">Email</th>
+                            <th className="py-3 px-4">Room</th>
+                            <th className="py-3 px-4">WhatsApp</th>
+                            <th className="py-3 px-4">Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {allUsers.map((u) => (
+                            <tr key={u.id} className="border-b border-gray-100">
+                                <td className="py-3 px-4 text-gray-900 font-medium">{u.displayName || '—'}</td>
+                                <td className="py-3 px-4 text-gray-700">{u.email || '—'}</td>
+                                <td className="py-3 px-4 text-gray-700">{u.roomNumber || '—'}</td>
+                                <td className="py-3 px-4 text-gray-700">
+                                    {u.whatsapp ? (
+                                        <a className="text-primary-600 hover:text-primary-700" href={`https://wa.me/91${String(u.whatsapp).replace(/\D/g,'')}`} target="_blank" rel="noreferrer">{u.whatsapp}</a>
+                                    ) : '—'}
+                                </td>
+                                <td className="py-3 px-4 text-gray-700">{u.isAdmin ? 'Admin' : 'User'}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+
     const renderProfile = () => {
         const saveProfile = async () => {
             setSavingProfile(true);
@@ -862,6 +901,7 @@ const AdminDashboard = ({ userData }) => {
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'menu' && renderMenuManagement()}
                     {activeTab === 'orders' && renderOrderManagement()}
+                    {activeTab === 'users' && renderUsers()}
                     {activeTab === 'notifications' && renderNotifications()}
                     {activeTab === 'analytics' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">

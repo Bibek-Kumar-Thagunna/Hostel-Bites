@@ -1,6 +1,6 @@
 // Modern header component with search and navigation
 import React, { useState } from 'react';
-import { Menu, User, ShoppingCart, LogOut } from 'lucide-react';
+import { Menu, User, ShoppingCart, LogOut, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -75,6 +75,20 @@ const Header = ({ userData, onMenuClick }) => {
 
                         {/* Action Buttons */}
                         <NotificationCenter userData={userData} />
+
+                        {/* Address/Profile Quick Edit (users) */}
+                        {!userData?.isAdmin && (
+                            <motion.button
+                                onClick={() => navigate('/app?section=profile&focus=room')}
+                                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                title="Update room/WhatsApp"
+                                aria-label="Update address"
+                            >
+                                <MapPin className="w-5 h-5" />
+                            </motion.button>
+                        )}
 
                         {/* Cart */}
                         <motion.button
